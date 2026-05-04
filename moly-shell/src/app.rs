@@ -39,7 +39,7 @@ live_design! {
     ICON_TRASH = dep("crate://self/resources/icons/trash.svg")
 
     // Logo (light and dark variants)
-    IMG_LOGO = dep("crate://self/resources/ominix-studio-logo.png")
+    IMG_LOGO = dep("crate://self/resources/moxin-studio-logo.png")
 
     // Provider icons - registered globally so they can be loaded by moly-kit
     ICON_PROVIDER_OPENAI = dep("crate://self/resources/providers/openai.png")
@@ -338,7 +338,7 @@ live_design! {
 
     App = {{App}} {
         ui: <Window> {
-            window: { title: "OminiX Studio", inner_size: vec2(1400, 900) }
+            window: { title: "Moxin Studio", inner_size: vec2(1400, 900) }
             pass: {
                 clear_color: #f5f7fa
             }
@@ -1057,7 +1057,7 @@ live_design! {
                                 }
 
                                 <Label> {
-                                    text: "About OminiX Studio"
+                                    text: "About Moxin Studio"
                                     draw_text: {
                                         color: #1f2937
                                         text_style: <FONT_SEMIBOLD>{ font_size: 18.0 }
@@ -1111,7 +1111,7 @@ live_design! {
                             <Label> {
                                 width: Fill, height: Fit
                                 margin: {top: 6}
-                                text: "Models are downloaded from Hugging Face on first use and cached locally. All inference runs on-device via GGUF quantized weights on Apple Silicon."
+                                text: "Models are downloaded from Hugging Face on first use and cached locally. All inference runs on-device via MLX on Apple Silicon."
                                 draw_text: {
                                     color: #9ca3af
                                     text_style: { font_size: 10.5 }
@@ -2342,7 +2342,12 @@ impl App {
 
         std::thread::spawn(move || {
             let result = ensure_server_running()
-                .and_then(|()| ModelRuntimeClient::localhost().load_model(&api_model_id, &model_type));
+                .and_then(|()| {
+                    if model_type == "video" || model_type == "video_generation" {
+                        return Ok(());
+                    }
+                    ModelRuntimeClient::localhost().load_model(&api_model_id, &model_type)
+                });
             let _ = tx.send(result);
         });
 

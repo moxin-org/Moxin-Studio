@@ -932,15 +932,22 @@ impl Widget for ChatApp {
             if let Some(store) = scope.data.get::<Store>() {
                 let all_bots = store.providers_manager.get_all_bots();
                 if !all_bots.is_empty() {
-                    // Re-filter bots based on current settings
                     let enabled_bots = Self::filter_enabled_bots(all_bots, store);
-                    ::log::info!("Controller reset: filtering {} enabled bots from {} total",
-                        enabled_bots.len(), all_bots.len());
 
                     self.force_reset_controller_on_widget(cx);
                     self.skip_chat_draw_frames = 2;
-                    // Re-dispatch filtered bots mutation so the new plugin sees them
-                    self.chat_controller.lock().unwrap().dispatch_mutation(VecMutation::Set(enabled_bots));
+
+                    // Preserve existing messages (including writing indicator) if busy
+                    let mut ctrl = self.chat_controller.lock().unwrap();
+                    let existing_msgs: Vec<_> = ctrl.state().messages.clone();
+                    ctrl.dispatch_mutation(VecMutation::Set(enabled_bots));
+                    if !existing_msgs.is_empty() {
+                        for msg in existing_msgs {
+                            ctrl.dispatch_mutation(VecMutation::Push(msg));
+                        }
+                    }
+                    drop(ctrl);
+
                     self.view.redraw(cx);
                     self.view.chat(ids!(main_content.chat)).redraw(cx);
                 }
@@ -999,13 +1006,8 @@ impl Widget for ChatApp {
         // Sync bot selection to current chat
         self.sync_bot_to_chat(scope);
 
-        // Handle events: welcome overlay (LLM only) OR Chat widget + mode controls
-        let pre_event_welcome_mode = self.in_welcome_mode;
-        if self.in_welcome_mode {
-            self.view.view(ids!(main_content.welcome_overlay)).handle_event(cx, event, scope);
-        } else {
-            self.view.chat(ids!(main_content.chat)).handle_event(cx, event, scope);
-        }
+        // Handle events for Chat widget + mode controls
+        self.view.chat(ids!(main_content.chat)).handle_event(cx, event, scope);
         self.view.view(ids!(header)).handle_event(cx, event, scope);
         self.view.view(ids!(mode_controls)).handle_event(cx, event, scope);
 
@@ -1109,18 +1111,8 @@ impl Widget for ChatApp {
         // Detect new user messages from Chat widget for non-LLM modes
         self.maybe_handle_mode_message(cx, scope);
 
-        if matches!(event, Event::KeyDown(_) | Event::TextInput(_)) && pre_event_welcome_mode != self.in_welcome_mode {
-            ::log::info!("handle_event AFTER selective handling: in_welcome_mode changed from {} to {}",
-                pre_event_welcome_mode, self.in_welcome_mode);
-        }
-
         // Use WidgetMatchEvent pattern for handling actions
         self.widget_match_event(cx, event, scope);
-
-        if matches!(event, Event::KeyDown(_) | Event::TextInput(_)) && pre_event_welcome_mode != self.in_welcome_mode {
-            ::log::info!("handle_event END: in_welcome_mode changed from {} to {}",
-                pre_event_welcome_mode, self.in_welcome_mode);
-        }
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
@@ -1149,26 +1141,15 @@ impl Widget for ChatApp {
             }
         }
 
-        // All non-LLM modes skip welcome overlay and go straight to Chat widget.
-        // Only LLM shows the welcome overlay (centered PromptInput) for the first message.
-        let wm = if self.chat_mode != ChatMode::Llm && self.in_welcome_mode {
-            self.in_welcome_mode = false;
-            false
-        } else {
-            self.in_welcome_mode
-        };
-        // After a controller reset (set_chat_controller None→Some), the Chat widget's
-        // internal Messages plugin needs one frame before it can safely draw.
-        // Keep Chat hidden for that frame to avoid a RefCell borrow conflict.
+        // Always show the Chat widget, never the welcome overlay.
+        // This keeps the UI consistent across all model types and avoids flashing.
+        self.in_welcome_mode = false;
         if self.skip_chat_draw_frames > 0 {
             self.skip_chat_draw_frames -= 1;
-            self.view.view(ids!(main_content.welcome_overlay)).set_visible(cx, true);
-            self.view.chat(ids!(main_content.chat)).set_visible(cx, false);
             self.view.redraw(cx);
-        } else {
-            self.view.view(ids!(main_content.welcome_overlay)).set_visible(cx, wm);
-            self.view.chat(ids!(main_content.chat)).set_visible(cx, !wm);
         }
+        self.view.view(ids!(main_content.welcome_overlay)).set_visible(cx, false);
+        self.view.chat(ids!(main_content.chat)).set_visible(cx, true);
 
         // Show mode_controls bar for non-LLM modes
         let show_controls = matches!(self.chat_mode, ChatMode::Vlm | ChatMode::Tts | ChatMode::ImageGen | ChatMode::Asr | ChatMode::VideoGen);
@@ -1536,7 +1517,8 @@ impl ChatApp {
             ctrl.dispatch_mutation(VecMutation::Set(kept.clone()));
             self.last_mode_msg_count = kept.len();
             drop(ctrl);
-            self.view.redraw(cx);
+            self.skip_chat_draw_frames = 2;
+            cx.new_next_frame();
         }
     }
 
@@ -2125,7 +2107,11 @@ impl ChatApp {
     /// Video: Start generation from the given prompt
     fn start_video_generate(&mut self, _cx: &mut Cx, scope: &mut Scope, prompt: String) {
         let model_id = if let Some(store) = scope.data.get::<Store>() {
-            store.get_active_local_model().unwrap_or("").to_string()
+            let registry_id = store.get_active_local_model().unwrap_or("").to_string();
+            let registry = moly_data::ModelRegistry::load();
+            registry.get(&registry_id)
+                .map(|m| m.runtime.api_model_id.clone())
+                .unwrap_or(registry_id)
         } else { return };
 
         if prompt.is_empty() { return; }

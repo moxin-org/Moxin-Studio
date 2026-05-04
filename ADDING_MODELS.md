@@ -1,4 +1,4 @@
-# Adding Models to OminiX Studio
+# Adding Models to Moxin Studio
 
 ## Overview
 

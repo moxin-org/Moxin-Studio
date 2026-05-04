@@ -1,4 +1,4 @@
-# Plan: Voice Cloning Frontend for OminiX Studio
+# Plan: Voice Cloning Frontend for Moxin Studio
 
 ## Context
 

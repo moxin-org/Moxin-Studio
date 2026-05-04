@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "ominix-studio"
+name = "moxin-studio"
 path = "src/main.rs"
 
 [dependencies]

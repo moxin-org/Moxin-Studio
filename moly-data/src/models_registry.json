@@ -2,40 +2,40 @@
       "version": "1.0.0",
       "models": [
             {
-                  "id": "qwen3-1.7b-q4km",
-                  "name": "Qwen3 1.7B (Q4_K_M)",
-                  "description": "Qwen3 1.7B GGUF Q4_K_M (~1.1 GB). Ultra-fast inference, runs on any Mac. Thinking + non-thinking mode.",
+                  "id": "qwen3-0.6b-4bit",
+                  "name": "Qwen3 0.6B (4-bit MLX)",
+                  "description": "Qwen3 0.6B 4-bit MLX (~0.3 GB). Ultra-tiny model for testing and quick replies. Runs on any Mac.",
                   "category": "llm",
                   "subfolder": "Qwen3",
                   "tags": [
                         "llm",
                         "chat",
                         "qwen3",
-                        "gguf",
-                        "q4km",
-                        "small",
+                        "mlx",
+                        "4bit",
+                        "tiny",
                         "fast"
                   ],
                   "source": {
                         "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-1.7B-GGUF",
+                        "repo_id": "mlx-community/Qwen3-0.6B-4bit",
                         "revision": "main"
                   },
                   "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-1.7B-GGUF",
-                        "size_bytes": 1192001536,
-                        "size_display": "~1.1 GB"
+                        "local_path": "~/.cache/huggingface/hub/models--mlx-community--Qwen3-0.6B-4bit",
+                        "size_bytes": 351386061,
+                        "size_display": "~0.3 GB"
                   },
                   "runtime": {
                         "api_type": "chat_completions",
-                        "api_model_id": "qwen3-1.7b-q4km",
-                        "memory_gb": 3.0,
+                        "api_model_id": "mlx-community/Qwen3-0.6B-4bit",
+                        "memory_gb": 1.5,
                         "platforms": [
                               "apple_silicon"
                         ],
                         "supports_images": false,
                         "supports_streaming": true,
-                        "quantization": "Q4_K_M"
+                        "quantization": "4bit"
                   },
                   "ui": {
                         "panel_type": "llm_chat",
@@ -43,39 +43,39 @@
                   }
             },
             {
-                  "id": "qwen3-1.7b-q8",
-                  "name": "Qwen3 1.7B (Q8)",
-                  "description": "Qwen3 1.7B GGUF Q8 (~2.1 GB). Near-original quality in a tiny footprint. Great for 8 GB Macs.",
+                  "id": "qwen3-4b-4bit",
+                  "name": "Qwen3 4B (4-bit MLX)",
+                  "description": "Qwen3 4B 4-bit MLX (~2.1 GB). Great quality-to-size ratio for chat, coding, and reasoning.",
                   "category": "llm",
                   "subfolder": "Qwen3",
                   "tags": [
                         "llm",
                         "chat",
                         "qwen3",
-                        "gguf",
-                        "q8",
-                        "small"
+                        "mlx",
+                        "4bit",
+                        "fast"
                   ],
                   "source": {
                         "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-1.7B-GGUF",
+                        "repo_id": "mlx-community/Qwen3-4B-4bit",
                         "revision": "main"
                   },
                   "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-1.7B-GGUF",
-                        "size_bytes": 2254857830,
+                        "local_path": "~/.cache/huggingface/hub/models--mlx-community--Qwen3-4B-4bit",
+                        "size_bytes": 2278972183,
                         "size_display": "~2.1 GB"
                   },
                   "runtime": {
                         "api_type": "chat_completions",
-                        "api_model_id": "qwen3-1.7b-q8",
+                        "api_model_id": "mlx-community/Qwen3-4B-4bit",
                         "memory_gb": 4.0,
                         "platforms": [
                               "apple_silicon"
                         ],
                         "supports_images": false,
                         "supports_streaming": true,
-                        "quantization": "Q8"
+                        "quantization": "4bit"
                   },
                   "ui": {
                         "panel_type": "llm_chat",
@@ -83,119 +83,40 @@
                   }
             },
             {
-                  "id": "qwen3-4b-q4km",
-                  "name": "Qwen3 4B (Q4_K_M)",
-                  "description": "Qwen3 4B GGUF Q4_K_M (~2.3 GB). Excellent speed and quality balance on 8 GB+ Macs.",
+                  "id": "qwen3-8b-8bit",
+                  "name": "Qwen3 8B (8-bit MLX)",
+                  "description": "Qwen3 8B 8-bit MLX (~8.1 GB). Excellent quality for chat, coding, and complex reasoning. Best for 16 GB Macs.",
                   "category": "llm",
                   "subfolder": "Qwen3",
                   "tags": [
                         "llm",
                         "chat",
                         "qwen3",
-                        "gguf",
-                        "q4km",
-                        "fast"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-4B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-4B-GGUF",
-                        "size_bytes": 2469606195,
-                        "size_display": "~2.3 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3-4b-q4km",
-                        "memory_gb": 5.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3-4b-q8",
-                  "name": "Qwen3 4B (Q8)",
-                  "description": "Qwen3 4B GGUF Q8 (~4.3 GB). High-quality chat, coding, and reasoning on 8 GB Macs.",
-                  "category": "llm",
-                  "subfolder": "Qwen3",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3",
-                        "gguf",
-                        "q8"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-4B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-4B-GGUF",
-                        "size_bytes": 4617089843,
-                        "size_display": "~4.3 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3-4b-q8",
-                        "memory_gb": 7.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q8"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3-8b-q4km",
-                  "name": "Qwen3 8B (Q4_K_M)",
-                  "description": "Qwen3 8B GGUF Q4_K_M (~4.9 GB). Excellent quality-to-size ratio. Recommended for 16 GB Macs.",
-                  "category": "llm",
-                  "subfolder": "Qwen3",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3",
-                        "gguf",
-                        "q4km",
+                        "mlx",
+                        "8bit",
                         "coding",
                         "multilingual"
                   ],
                   "source": {
                         "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-8B-GGUF",
+                        "repo_id": "mlx-community/Qwen3-8B-8bit",
                         "revision": "main"
                   },
                   "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-8B-GGUF",
-                        "size_bytes": 5262684160,
-                        "size_display": "~4.9 GB"
+                        "local_path": "~/.cache/huggingface/hub/models--mlx-community--Qwen3-8B-8bit",
+                        "size_bytes": 8719012398,
+                        "size_display": "~8.1 GB"
                   },
                   "runtime": {
                         "api_type": "chat_completions",
-                        "api_model_id": "qwen3-8b-q4km",
-                        "memory_gb": 8.0,
+                        "api_model_id": "mlx-community/Qwen3-8B-8bit",
+                        "memory_gb": 10.0,
                         "platforms": [
                               "apple_silicon"
                         ],
                         "supports_images": false,
                         "supports_streaming": true,
-                        "quantization": "Q4_K_M"
+                        "quantization": "8bit"
                   },
                   "ui": {
                         "panel_type": "llm_chat",
@@ -203,40 +124,40 @@
                   }
             },
             {
-                  "id": "qwen3-8b-q8",
-                  "name": "Qwen3 8B (Q8)",
-                  "description": "Qwen3 8B GGUF Q8 (~9 GB). Near-original quality for chat, coding, and complex reasoning.",
+                  "id": "qwen3-8b-bf16",
+                  "name": "Qwen3 8B (bf16 MLX)",
+                  "description": "Qwen3 8B full-precision MLX (~16 GB). Maximum quality, no quantization loss. Requires 32 GB Mac.",
                   "category": "llm",
                   "subfolder": "Qwen3",
                   "tags": [
                         "llm",
                         "chat",
                         "qwen3",
-                        "gguf",
-                        "q8",
+                        "mlx",
+                        "bf16",
                         "coding",
                         "multilingual"
                   ],
                   "source": {
                         "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-8B-GGUF",
+                        "repo_id": "mlx-community/Qwen3-8B-bf16",
                         "revision": "main"
                   },
                   "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-8B-GGUF",
-                        "size_bytes": 9663676416,
-                        "size_display": "~9 GB"
+                        "local_path": "~/.cache/huggingface/hub/models--mlx-community--Qwen3-8B-bf16",
+                        "size_bytes": 16397436766,
+                        "size_display": "~16 GB"
                   },
                   "runtime": {
                         "api_type": "chat_completions",
-                        "api_model_id": "qwen3-8b-q8",
-                        "memory_gb": 12.0,
+                        "api_model_id": "mlx-community/Qwen3-8B-bf16",
+                        "memory_gb": 18.0,
                         "platforms": [
                               "apple_silicon"
                         ],
                         "supports_images": false,
                         "supports_streaming": true,
-                        "quantization": "Q8"
+                        "quantization": "bf16"
                   },
                   "ui": {
                         "panel_type": "llm_chat",
@@ -244,81 +165,40 @@
                   }
             },
             {
-                  "id": "qwen3-14b-q4km",
-                  "name": "Qwen3 14B (Q4_K_M)",
-                  "description": "Qwen3 14B GGUF Q4_K_M (~8.5 GB). Strong reasoning and coding. Great for 16 GB Macs.",
+                  "id": "glm4.7-flash-4bit",
+                  "name": "GLM-4.7-Flash (4-bit MLX)",
+                  "description": "Zhipu GLM-4.7-Flash 30B-A3B MoE 4-bit MLX (~15.7 GB). Top-tier reasoning. Requires 32 GB Mac.",
                   "category": "llm",
-                  "subfolder": "Qwen3",
+                  "subfolder": "GLM",
                   "tags": [
                         "llm",
                         "chat",
-                        "qwen3",
-                        "gguf",
-                        "q4km",
-                        "coding",
+                        "glm",
+                        "mlx",
+                        "4bit",
+                        "moe",
                         "reasoning"
                   ],
                   "source": {
                         "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-14B-GGUF",
+                        "repo_id": "mlx-community/GLM-4.7-Flash-4bit",
                         "revision": "main"
                   },
                   "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-14B-GGUF",
-                        "size_bytes": 9126805504,
-                        "size_display": "~8.5 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3-14b-q4km",
-                        "memory_gb": 12.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3-14b-q8",
-                  "name": "Qwen3 14B (Q8)",
-                  "description": "Qwen3 14B GGUF Q8 (~15.7 GB). High-fidelity reasoning and multilingual chat. Requires 32 GB Mac.",
-                  "category": "llm",
-                  "subfolder": "Qwen3",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3",
-                        "gguf",
-                        "q8",
-                        "coding",
-                        "reasoning"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-14B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-14B-GGUF",
-                        "size_bytes": 16860323020,
+                        "local_path": "~/.cache/huggingface/hub/models--mlx-community--GLM-4.7-Flash-4bit",
+                        "size_bytes": 16872850407,
                         "size_display": "~15.7 GB"
                   },
                   "runtime": {
                         "api_type": "chat_completions",
-                        "api_model_id": "qwen3-14b-q8",
+                        "api_model_id": "mlx-community/GLM-4.7-Flash-4bit",
                         "memory_gb": 20.0,
                         "platforms": [
                               "apple_silicon"
                         ],
                         "supports_images": false,
                         "supports_streaming": true,
-                        "quantization": "Q8"
+                        "quantization": "4bit"
                   },
                   "ui": {
                         "panel_type": "llm_chat",
@@ -326,415 +206,39 @@
                   }
             },
             {
-                  "id": "qwen3-32b-q4km",
-                  "name": "Qwen3 32B (Q4_K_M)",
-                  "description": "Qwen3 32B GGUF Q4_K_M (~19.5 GB). Top-tier open-source LLM with deep reasoning. Best for 32 GB Macs.",
+                  "id": "mistral-nemo-12b-4bit",
+                  "name": "Mistral-Nemo 12B (4-bit MLX)",
+                  "description": "Mistral-Nemo 12B 4-bit MLX (~6.4 GB). Strong multilingual chat and instruction following.",
                   "category": "llm",
-                  "subfolder": "Qwen3",
+                  "subfolder": "Mistral",
                   "tags": [
                         "llm",
                         "chat",
-                        "qwen3",
-                        "gguf",
-                        "q4km",
-                        "coding",
-                        "reasoning",
-                        "large"
+                        "mistral",
+                        "mlx",
+                        "4bit",
+                        "multilingual"
                   ],
                   "source": {
                         "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-32B-GGUF",
+                        "repo_id": "mlx-community/Mistral-Nemo-Instruct-2407-4bit",
                         "revision": "main"
                   },
                   "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-32B-GGUF",
-                        "size_bytes": 20937965977,
-                        "size_display": "~19.5 GB"
+                        "local_path": "~/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit",
+                        "size_bytes": 6905203123,
+                        "size_display": "~6.4 GB"
                   },
                   "runtime": {
                         "api_type": "chat_completions",
-                        "api_model_id": "qwen3-32b-q4km",
-                        "memory_gb": 24.0,
+                        "api_model_id": "mlx-community/Mistral-Nemo-Instruct-2407-4bit",
+                        "memory_gb": 8.0,
                         "platforms": [
                               "apple_silicon"
                         ],
                         "supports_images": false,
                         "supports_streaming": true,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3-32b-q8",
-                  "name": "Qwen3 32B (Q8)",
-                  "description": "Qwen3 32B GGUF Q8 (~36 GB). Near-original precision for frontier-level LLM tasks. Requires 64 GB Mac.",
-                  "category": "llm",
-                  "subfolder": "Qwen3",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3",
-                        "gguf",
-                        "q8",
-                        "coding",
-                        "reasoning",
-                        "large"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3-32B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-32B-GGUF",
-                        "size_bytes": 38654705664,
-                        "size_display": "~36 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3-32b-q8",
-                        "memory_gb": 44.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q8"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3.5-9b-q4km",
-                  "name": "Qwen3.5 9B (Q4_K_M)",
-                  "description": "Qwen3.5 9B GGUF Q4_K_M (~5.5 GB). Hybrid DeltaNet + Gated Attention — O(1) memory for 75% of layers.",
-                  "category": "llm",
-                  "subfolder": "Qwen3.5",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3.5",
-                        "gguf",
-                        "q4km",
-                        "hybrid",
-                        "deltanet"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3.5-9B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3.5-9B-GGUF",
-                        "size_bytes": 5905580032,
-                        "size_display": "~5.5 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3.5-9b-q4km",
-                        "memory_gb": 9.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3.5-9b-q8",
-                  "name": "Qwen3.5 9B (Q8)",
-                  "description": "Qwen3.5 9B GGUF Q8 (~10.5 GB). High-fidelity hybrid architecture model for chat and reasoning.",
-                  "category": "llm",
-                  "subfolder": "Qwen3.5",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3.5",
-                        "gguf",
-                        "q8",
-                        "hybrid",
-                        "deltanet"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3.5-9B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3.5-9B-GGUF",
-                        "size_bytes": 11274289152,
-                        "size_display": "~10.5 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3.5-9b-q8",
-                        "memory_gb": 14.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q8"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3.5-27b-q4km",
-                  "name": "Qwen3.5 27B (Q4_K_M)",
-                  "description": "Qwen3.5 27B GGUF Q4_K_M (~16.5 GB). Strong 27B hybrid model. Best balance for 32+ GB Macs.",
-                  "category": "llm",
-                  "subfolder": "Qwen3.5",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3.5",
-                        "gguf",
-                        "q4km",
-                        "hybrid",
-                        "reasoning"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3.5-27B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3.5-27B-GGUF",
-                        "size_bytes": 17716740096,
-                        "size_display": "~16.5 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3.5-27b-q4km",
-                        "memory_gb": 22.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3.5-27b-q8",
-                  "name": "Qwen3.5 27B (Q8)",
-                  "description": "Qwen3.5 27B GGUF Q8 (~31 GB). Near-original quality hybrid model. Requires 64 GB Mac.",
-                  "category": "llm",
-                  "subfolder": "Qwen3.5",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3.5",
-                        "gguf",
-                        "q8",
-                        "hybrid",
-                        "reasoning"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3.5-27B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3.5-27B-GGUF",
-                        "size_bytes": 33285996544,
-                        "size_display": "~31 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3.5-27b-q8",
-                        "memory_gb": 38.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q8"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3.5-35b-a3b-q4km",
-                  "name": "Qwen3.5 35B-A3B (Q4_K_M)",
-                  "description": "Qwen3.5 35B-A3B MoE GGUF Q4_K_M (~21 GB). 35B total / 3B active. Efficient MoE reasoning model.",
-                  "category": "llm",
-                  "subfolder": "Qwen3.5",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3.5",
-                        "gguf",
-                        "q4km",
-                        "moe",
-                        "hybrid",
-                        "reasoning"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3.5-35B-A3B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3.5-35B-A3B-GGUF",
-                        "size_bytes": 22548578304,
-                        "size_display": "~21 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3.5-35b-a3b-q4km",
-                        "memory_gb": 28.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "qwen3.5-35b-a3b-q8",
-                  "name": "Qwen3.5 35B-A3B (Q8)",
-                  "description": "Qwen3.5 35B-A3B MoE GGUF Q8 (~38 GB). Near-original quality large MoE model. Requires 64 GB Mac.",
-                  "category": "llm",
-                  "subfolder": "Qwen3.5",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "qwen3.5",
-                        "gguf",
-                        "q8",
-                        "moe",
-                        "hybrid",
-                        "reasoning"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/Qwen3.5-35B-A3B-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3.5-35B-A3B-GGUF",
-                        "size_bytes": 40802189312,
-                        "size_display": "~38 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "qwen3.5-35b-a3b-q8",
-                        "memory_gb": 48.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q8"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "glm4.7-flash-q4km",
-                  "name": "GLM-4.7-Flash (Q4_K_M)",
-                  "description": "Zhipu GLM-4.7-Flash 30B-A3B MoE GGUF Q4_K_M (~18.3 GB). Beats Qwen3-30B-A3B on AIME and SWE-bench.",
-                  "category": "llm",
-                  "subfolder": "GLM",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "glm",
-                        "gguf",
-                        "q4km",
-                        "moe",
-                        "chinese",
-                        "reasoning"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/GLM-4.7-Flash-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--GLM-4.7-Flash-GGUF",
-                        "size_bytes": 19653892096,
-                        "size_display": "~18.3 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "glm4.7-flash-q4km",
-                        "memory_gb": 24.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "llm_chat",
-                        "icon": "chat"
-                  }
-            },
-            {
-                  "id": "glm4.7-flash-q8",
-                  "name": "GLM-4.7-Flash (Q8)",
-                  "description": "Zhipu GLM-4.7-Flash 30B-A3B MoE GGUF Q8 (~31.8 GB). Highest quality GLM Flash. Requires 64 GB Mac.",
-                  "category": "llm",
-                  "subfolder": "GLM",
-                  "tags": [
-                        "llm",
-                        "chat",
-                        "glm",
-                        "gguf",
-                        "q8",
-                        "moe",
-                        "chinese",
-                        "reasoning"
-                  ],
-                  "source": {
-                        "kind": "hugging_face",
-                        "repo_id": "unsloth/GLM-4.7-Flash-GGUF",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.cache/huggingface/hub/models--unsloth--GLM-4.7-Flash-GGUF",
-                        "size_bytes": 34145411072,
-                        "size_display": "~31.8 GB"
-                  },
-                  "runtime": {
-                        "api_type": "chat_completions",
-                        "api_model_id": "glm4.7-flash-q8",
-                        "memory_gb": 40.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": true,
-                        "quantization": "Q8"
+                        "quantization": "4bit"
                   },
                   "ui": {
                         "panel_type": "llm_chat",
@@ -1022,112 +526,6 @@
                         "panel_type": "asr_transcription",
                         "icon": "app"
                   }
-            },
-            {
-                  "id": "wan2.2-5b-q4km",
-                  "name": "Wan2.2 5B (Q4_K_M)",
-                  "description": "Wan2.2 5B text-to-video diffusion model, Q4_K_M GGUF (~5 GB). Generate high-quality videos from text prompts on Apple Silicon.",
-                  "category": "video_gen",
-                  "subfolder": "Wan2.2",
-                  "tags": [
-                        "video-generation",
-                        "wan2",
-                        "text-to-video",
-                        "q4km",
-                        "gguf"
-                  ],
-                  "source": {
-                        "kind": "direct_url",
-                        "url": "https://huggingface.co/QuantStack/Wan2.2-TI2V-5B-GGUF/resolve/main/Wan2.2-TI2V-5B-Q4_K_M.gguf",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.OminiX/models/wan2.2-5b-q4km",
-                        "size_bytes": 3686000000,
-                        "size_display": "~3.4 GB"
-                  },
-                  "runtime": {
-                        "api_type": "video_generation",
-                        "api_model_id": "wan2.2-5b-q4km",
-                        "memory_gb": 6.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": false,
-                        "quantization": "Q4_K_M"
-                  },
-                  "ui": {
-                        "panel_type": "video_generation",
-                        "icon": "video"
-                  },
-                  "extra_sources": [
-                        {
-                              "source": {
-                                    "kind": "direct_url",
-                                    "url": "https://huggingface.co/QuantStack/Wan2.2-TI2V-5B-GGUF/resolve/main/VAE/Wan2.2_VAE.safetensors",
-                                    "revision": "main"
-                              },
-                              "storage": {
-                                    "local_path": "~/.OminiX/models/wan2.2-5b-q4km/VAE",
-                                    "size_bytes": 0,
-                                    "size_display": ""
-                              }
-                        }
-                  ]
-            },
-            {
-                  "id": "wan2.2-5b-q8",
-                  "name": "Wan2.2 5B (Q8)",
-                  "description": "Wan2.2 5B text-to-video diffusion model, Q8 GGUF (~9 GB). Higher fidelity video generation on 16+ GB Apple Silicon.",
-                  "category": "video_gen",
-                  "subfolder": "Wan2.2",
-                  "tags": [
-                        "video-generation",
-                        "wan2",
-                        "text-to-video",
-                        "q8",
-                        "gguf"
-                  ],
-                  "source": {
-                        "kind": "direct_url",
-                        "url": "https://huggingface.co/QuantStack/Wan2.2-TI2V-5B-GGUF/resolve/main/Wan2.2-TI2V-5B-Q8_0.gguf",
-                        "revision": "main"
-                  },
-                  "storage": {
-                        "local_path": "~/.OminiX/models/wan2.2-5b-q8",
-                        "size_bytes": 5800000000,
-                        "size_display": "~5.4 GB"
-                  },
-                  "runtime": {
-                        "api_type": "video_generation",
-                        "api_model_id": "wan2.2-5b-q8",
-                        "memory_gb": 8.0,
-                        "platforms": [
-                              "apple_silicon"
-                        ],
-                        "supports_images": false,
-                        "supports_streaming": false,
-                        "quantization": "Q8"
-                  },
-                  "ui": {
-                        "panel_type": "video_generation",
-                        "icon": "video"
-                  },
-                  "extra_sources": [
-                        {
-                              "source": {
-                                    "kind": "direct_url",
-                                    "url": "https://huggingface.co/QuantStack/Wan2.2-TI2V-5B-GGUF/resolve/main/VAE/Wan2.2_VAE.safetensors",
-                                    "revision": "main"
-                              },
-                              "storage": {
-                                    "local_path": "~/.OminiX/models/wan2.2-5b-q8/VAE",
-                                    "size_bytes": 0,
-                                    "size_display": ""
-                              }
-                        }
-                  ]
             },
             {
                   "id": "flux-klein-4b-8bit",
@@ -1476,6 +874,303 @@
                               }
                         }
                   ]
+            },
+            {
+                  "id": "qwen3-1.7b-q4km-gguf",
+                  "name": "Qwen3 1.7B (Q4_K_M GGUF) — Coming Soon",
+                  "description": "Qwen3 1.7B GGUF Q4_K_M (~1.1 GB). Ultra-fast inference, runs on any Mac. Coming soon.",
+                  "category": "llm",
+                  "subfolder": "Qwen3 GGUF",
+                  "tags": [
+                        "llm",
+                        "chat",
+                        "qwen3",
+                        "gguf",
+                        "q4km",
+                        "small",
+                        "fast",
+                        "coming-soon"
+                  ],
+                  "source": {
+                        "kind": "hugging_face",
+                        "repo_id": "unsloth/Qwen3-1.7B-GGUF",
+                        "revision": "main"
+                  },
+                  "storage": {
+                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-1.7B-GGUF",
+                        "size_bytes": 1192001536,
+                        "size_display": "~1.1 GB"
+                  },
+                  "runtime": {
+                        "api_type": "chat_completions",
+                        "api_model_id": "qwen3-1.7b-q4km",
+                        "memory_gb": 3.0,
+                        "platforms": [
+                              "apple_silicon"
+                        ],
+                        "supports_images": false,
+                        "supports_streaming": true,
+                        "quantization": "Q4_K_M"
+                  },
+                  "ui": {
+                        "panel_type": "llm_chat",
+                        "icon": "chat"
+                  },
+                  "coming_soon": true
+            },
+            {
+                  "id": "qwen3-4b-q4km-gguf",
+                  "name": "Qwen3 4B (Q4_K_M GGUF) — Coming Soon",
+                  "description": "Qwen3 4B GGUF Q4_K_M (~2.3 GB). Excellent speed and quality balance. Coming soon.",
+                  "category": "llm",
+                  "subfolder": "Qwen3 GGUF",
+                  "tags": [
+                        "llm",
+                        "chat",
+                        "qwen3",
+                        "gguf",
+                        "q4km",
+                        "fast",
+                        "coming-soon"
+                  ],
+                  "source": {
+                        "kind": "hugging_face",
+                        "repo_id": "unsloth/Qwen3-4B-GGUF",
+                        "revision": "main"
+                  },
+                  "storage": {
+                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-4B-GGUF",
+                        "size_bytes": 2469606195,
+                        "size_display": "~2.3 GB"
+                  },
+                  "runtime": {
+                        "api_type": "chat_completions",
+                        "api_model_id": "qwen3-4b-q4km",
+                        "memory_gb": 5.0,
+                        "platforms": [
+                              "apple_silicon"
+                        ],
+                        "supports_images": false,
+                        "supports_streaming": true,
+                        "quantization": "Q4_K_M"
+                  },
+                  "ui": {
+                        "panel_type": "llm_chat",
+                        "icon": "chat"
+                  },
+                  "coming_soon": true
+            },
+            {
+                  "id": "qwen3-8b-q4km-gguf",
+                  "name": "Qwen3 8B (Q4_K_M GGUF) — Coming Soon",
+                  "description": "Qwen3 8B GGUF Q4_K_M (~4.9 GB). Excellent quality-to-size ratio. Coming soon.",
+                  "category": "llm",
+                  "subfolder": "Qwen3 GGUF",
+                  "tags": [
+                        "llm",
+                        "chat",
+                        "qwen3",
+                        "gguf",
+                        "q4km",
+                        "coding",
+                        "coming-soon"
+                  ],
+                  "source": {
+                        "kind": "hugging_face",
+                        "repo_id": "unsloth/Qwen3-8B-GGUF",
+                        "revision": "main"
+                  },
+                  "storage": {
+                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-8B-GGUF",
+                        "size_bytes": 5262684160,
+                        "size_display": "~4.9 GB"
+                  },
+                  "runtime": {
+                        "api_type": "chat_completions",
+                        "api_model_id": "qwen3-8b-q4km",
+                        "memory_gb": 8.0,
+                        "platforms": [
+                              "apple_silicon"
+                        ],
+                        "supports_images": false,
+                        "supports_streaming": true,
+                        "quantization": "Q4_K_M"
+                  },
+                  "ui": {
+                        "panel_type": "llm_chat",
+                        "icon": "chat"
+                  },
+                  "coming_soon": true
+            },
+            {
+                  "id": "qwen3-14b-q4km-gguf",
+                  "name": "Qwen3 14B (Q4_K_M GGUF) — Coming Soon",
+                  "description": "Qwen3 14B GGUF Q4_K_M (~8.5 GB). Strong reasoning and coding. Coming soon.",
+                  "category": "llm",
+                  "subfolder": "Qwen3 GGUF",
+                  "tags": [
+                        "llm",
+                        "chat",
+                        "qwen3",
+                        "gguf",
+                        "q4km",
+                        "coding",
+                        "reasoning",
+                        "coming-soon"
+                  ],
+                  "source": {
+                        "kind": "hugging_face",
+                        "repo_id": "unsloth/Qwen3-14B-GGUF",
+                        "revision": "main"
+                  },
+                  "storage": {
+                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-14B-GGUF",
+                        "size_bytes": 9126805504,
+                        "size_display": "~8.5 GB"
+                  },
+                  "runtime": {
+                        "api_type": "chat_completions",
+                        "api_model_id": "qwen3-14b-q4km",
+                        "memory_gb": 12.0,
+                        "platforms": [
+                              "apple_silicon"
+                        ],
+                        "supports_images": false,
+                        "supports_streaming": true,
+                        "quantization": "Q4_K_M"
+                  },
+                  "ui": {
+                        "panel_type": "llm_chat",
+                        "icon": "chat"
+                  },
+                  "coming_soon": true
+            },
+            {
+                  "id": "qwen3-32b-q4km-gguf",
+                  "name": "Qwen3 32B (Q4_K_M GGUF) — Coming Soon",
+                  "description": "Qwen3 32B GGUF Q4_K_M (~19.5 GB). Top-tier open-source LLM. Coming soon.",
+                  "category": "llm",
+                  "subfolder": "Qwen3 GGUF",
+                  "tags": [
+                        "llm",
+                        "chat",
+                        "qwen3",
+                        "gguf",
+                        "q4km",
+                        "coding",
+                        "reasoning",
+                        "large",
+                        "coming-soon"
+                  ],
+                  "source": {
+                        "kind": "hugging_face",
+                        "repo_id": "unsloth/Qwen3-32B-GGUF",
+                        "revision": "main"
+                  },
+                  "storage": {
+                        "local_path": "~/.cache/huggingface/hub/models--unsloth--Qwen3-32B-GGUF",
+                        "size_bytes": 20937965977,
+                        "size_display": "~19.5 GB"
+                  },
+                  "runtime": {
+                        "api_type": "chat_completions",
+                        "api_model_id": "qwen3-32b-q4km",
+                        "memory_gb": 24.0,
+                        "platforms": [
+                              "apple_silicon"
+                        ],
+                        "supports_images": false,
+                        "supports_streaming": true,
+                        "quantization": "Q4_K_M"
+                  },
+                  "ui": {
+                        "panel_type": "llm_chat",
+                        "icon": "chat"
+                  },
+                  "coming_soon": true
+            },
+            {
+                  "id": "glm4.7-flash-q4km-gguf",
+                  "name": "GLM-4.7-Flash (Q4_K_M GGUF) — Coming Soon",
+                  "description": "Zhipu GLM-4.7-Flash 30B-A3B MoE GGUF Q4_K_M (~18.3 GB). Coming soon.",
+                  "category": "llm",
+                  "subfolder": "GLM GGUF",
+                  "tags": [
+                        "llm",
+                        "chat",
+                        "glm",
+                        "gguf",
+                        "q4km",
+                        "moe",
+                        "reasoning",
+                        "coming-soon"
+                  ],
+                  "source": {
+                        "kind": "hugging_face",
+                        "repo_id": "unsloth/GLM-4.7-Flash-GGUF",
+                        "revision": "main"
+                  },
+                  "storage": {
+                        "local_path": "~/.cache/huggingface/hub/models--unsloth--GLM-4.7-Flash-GGUF",
+                        "size_bytes": 19653892096,
+                        "size_display": "~18.3 GB"
+                  },
+                  "runtime": {
+                        "api_type": "chat_completions",
+                        "api_model_id": "glm4.7-flash-q4km",
+                        "memory_gb": 24.0,
+                        "platforms": [
+                              "apple_silicon"
+                        ],
+                        "supports_images": false,
+                        "supports_streaming": true,
+                        "quantization": "Q4_K_M"
+                  },
+                  "ui": {
+                        "panel_type": "llm_chat",
+                        "icon": "chat"
+                  },
+                  "coming_soon": true
+            },
+            {
+                  "id": "wan2.2-5b-4bit-mlx",
+                  "name": "Wan2.2 5B (4-bit MLX) — Coming Soon",
+                  "description": "Wan2.2 5B text-to-video diffusion model. Generate videos from text prompts on Apple Silicon. Coming soon.",
+                  "category": "video_gen",
+                  "subfolder": "Wan2.2",
+                  "tags": [
+                        "video-generation",
+                        "wan2",
+                        "text-to-video",
+                        "mlx",
+                        "4bit",
+                        "coming-soon"
+                  ],
+                  "source": {
+                        "kind": "manual",
+                        "revision": "main"
+                  },
+                  "storage": {
+                        "local_path": "~/.OminiX/models/wan2.2-5b/mlx_model_4bit",
+                        "size_bytes": 4000000000,
+                        "size_display": "~4 GB"
+                  },
+                  "runtime": {
+                        "api_type": "video_generation",
+                        "api_model_id": "wan2.2-5b-4bit-mlx",
+                        "memory_gb": 8.0,
+                        "platforms": [
+                              "apple_silicon"
+                        ],
+                        "supports_images": false,
+                        "supports_streaming": false,
+                        "quantization": "4bit"
+                  },
+                  "ui": {
+                        "panel_type": "video_generation",
+                        "icon": "video"
+                  },
+                  "coming_soon": true
             }
       ]
 }

@@ -1,8 +1,8 @@
-# OminiX-Studio Refactoring Plan
+# Moxin-Studio Refactoring Plan
 
 ## Goal
 
-Refactor OminiX-Studio to reuse widgets from `makepad-component` and adopt
+Refactor Moxin-Studio to reuse widgets from `makepad-component` and adopt
 architectural patterns from `mofa-studio`, eliminating ~800 lines of duplicated
 DSL code and establishing a shared component layer.
 
@@ -307,11 +307,11 @@ After extracting MolyShell, app.rs DSL shrinks from ~1000 lines to:
 ```
 App = {{App}} {
     ui: <Window> {
-        window: { title: "OminiX Studio", inner_size: vec2(1400, 900) }
+        window: { title: "Moxin Studio", inner_size: vec2(1400, 900) }
         body = <MolyShell> {
             header_slot = {
                 logo = <Image> { source: (IMG_LOGO) }
-                title = <Label> { text: "OminiX Studio" }
+                title = <Label> { text: "Moxin Studio" }
                 theme_toggle = <MpButton> { /* sun/moon */ }
             }
             sidebar_slot = {
@@ -336,7 +336,7 @@ App = {{App}} {
 
 ### 4.3 Improve PageRouter usage
 
-Current OminiX-Studio already has PageRouter in moly-widgets but doesn't use it.
+Current Moxin-Studio already has PageRouter in moly-widgets but doesn't use it.
 `app.rs` manually tracks `current_view: NavigationTarget` and calls
 `apply_view_state()` with manual visibility toggles.
 

@@ -1,10 +1,10 @@
 <div align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/75442e77-0211-4fb5-9a17-1a0bed89426f">
-  <img width="500" alt="OminiX-MLX" src="[https://github.com/user-attachments/assets/b168cf1c-8e2f-4969-bffa-b57ee33950c0](https://github.com/user-attachments/assets/063e750e-ac4b-48e6-ba20-f9b4ac5bbe04)" />
+  <img width="500" alt="Moxin Studio" src="[https://github.com/user-attachments/assets/b168cf1c-8e2f-4969-bffa-b57ee33950c0](https://github.com/user-attachments/assets/063e750e-ac4b-48e6-ba20-f9b4ac5bbe04)" />
 </picture>
 
-# OminiX Studio
+# Moxin Studio
 
 </div>
 
@@ -12,11 +12,11 @@ A native desktop AI application built with pure Rust and [Makepad](https://githu
 
 ## The OminiX Platform
 
-OminiX is a full-stack, pure Rust AI platform for on-device inference. OminiX Studio is the user-facing layer of a three-part stack:
+OminiX is a full-stack, pure Rust AI platform for on-device inference. Moxin Studio is the user-facing layer of a three-part stack:
 
 ```
 ┌─────────────────────────────────────────────┐
-│            OminiX Studio (this repo)        │  Desktop UI (Rust + Makepad)
+│            Moxin Studio (this repo)         │  Desktop UI (Rust + Makepad)
 │         Chat · Models · Voice · Settings    │
 └──────────────────────┬──────────────────────┘
                        │ OpenAI-compatible REST/WS
@@ -35,7 +35,7 @@ OminiX is a full-stack, pure Rust AI platform for on-device inference. OminiX St
 
 - [**OminiX-API**](https://github.com/OminiX-ai/OminiX-API) — Local AI inference server in pure Rust. OpenAI-compatible HTTP and WebSocket endpoints for chat completions, transcription, TTS, and image generation. Supports dynamic model loading at runtime without restarts.
 
-- **OminiX Studio** (this repo) — The desktop application. Connects to OminiX-API for local inference, and also supports cloud providers (OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter, SiliconFlow, and more).
+- **Moxin Studio** (this repo) — The desktop application. Connects to OminiX-API for local inference, and also supports cloud providers (OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter, SiliconFlow, and more).
 
 All three projects are at [github.com/OminiX-ai](https://github.com/OminiX-ai).
 
@@ -52,8 +52,8 @@ All three projects are at [github.com/OminiX-ai](https://github.com/OminiX-ai).
 ## Project Structure
 
 ```
-OminiX-Studio/
-├── moly-shell/          # Main application binary (ominix-studio)
+Moxin-Studio/
+├── moly-shell/          # Main application binary (moxin-studio)
 ├── moly-data/           # Shared state, persistence, API clients
 ├── moly-widgets/        # Reusable UI components and theming
 └── apps/
@@ -73,12 +73,12 @@ OminiX-Studio/
 ## Getting Started
 
 ```bash
-git clone https://github.com/OminiX-ai/OminiX-Studio.git
-cd OminiX-Studio
-cargo run -p moly-shell --bin ominix-studio
+git clone https://github.com/OminiX-ai/Moxin-Studio.git
+cd Moxin-Studio
+cargo run -p moly-shell --bin moxin-studio
 ```
 
-For local model inference, set up [OminiX-API](https://github.com/OminiX-ai/OminiX-API) — see its README. OminiX-Studio will auto-start the API server when you load a model from the Hub.
+For local model inference, set up [OminiX-API](https://github.com/OminiX-ai/OminiX-API) — see its README. Moxin Studio will auto-start the API server when you load a model from the Hub.
 
 For cloud providers, open Settings in the app and configure your API keys.
 

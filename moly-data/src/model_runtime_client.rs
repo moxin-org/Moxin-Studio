@@ -131,7 +131,7 @@ pub fn find_api_binary() -> Option<std::path::PathBuf> {
         }
     }
 
-    // 3. Sibling of running binary (e.g. /Applications/OminiX.app/Contents/MacOS/)
+    // 3. Sibling of running binary (e.g. /Applications/Moxin.app/Contents/MacOS/)
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let candidate = parent.join("ominix-api");
@@ -140,11 +140,11 @@ pub fn find_api_binary() -> Option<std::path::PathBuf> {
     }
 
     // 4. Dev layout:
-    //    exe = .../OminiX-Studio/target/debug/ominix-studio
+    //    exe = .../Moxin-Studio/target/debug/moxin-studio
     //    api = .../OminiX-API/target/release/ominix-api   (release preferred)
     //          .../OminiX-API/target/debug/ominix-api     (fallback)
     if let Ok(exe) = std::env::current_exe() {
-        // Walk up: ominix-studio -> debug -> target -> OminiX-Studio -> OminiX (workspace root)
+        // Walk up: moxin-studio -> debug -> target -> Moxin-Studio -> OminiX (workspace root)
         if let Some(ominix_root) = exe.ancestors().nth(4) {
             for build_kind in &["release", "debug"] {
                 let candidate = ominix_root

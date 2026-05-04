@@ -1,8 +1,8 @@
-# OminiX Studio — MLX Model Integration Plan
+# Moxin Studio — MLX Model Integration Plan
 
 ## Vision
 
-OminiX Studio becomes the native desktop hub for all MLX-accelerated models.
+Moxin Studio becomes the native desktop hub for all MLX-accelerated models.
 Users download, load, and interact with any model type (LLM, VLM, ASR, TTS, Image)
 without touching a terminal. New models from ominix-mlx appear automatically via a
 versioned JSON registry — zero code changes required.
@@ -13,7 +13,7 @@ versioned JSON registry — zero code changes required.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  OminiX Studio (moly-shell)                                      │
+│  Moxin Studio (moly-shell)                                       │
 │                                                                  │
 │  Sidebar                   Main Content                          │
 │  ──────────                ─────────────────────────────────     │

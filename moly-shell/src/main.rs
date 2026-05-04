@@ -1,12 +1,11 @@
 mod app;
 
-/// Sets the macOS Dock icon using the bundled .icns file.
-/// This is needed when running via `cargo run` since the binary isn't inside
-/// the .app bundle and macOS can't read CFBundleIconName from Info.plist.
+/// Sets the macOS Dock icon and menubar app name.
+/// Needed when running via `cargo run` since the binary isn't inside
+/// the .app bundle and macOS can't read Info.plist.
 #[cfg(target_os = "macos")]
-fn set_dock_icon() {
+fn set_dock_icon_and_name() {
     std::thread::spawn(|| {
-        // Wait for NSApplication run loop to be ready
         std::thread::sleep(std::time::Duration::from_millis(200));
 
         let icon_path = concat!(env!("CARGO_MANIFEST_DIR"), "/resources/AppIcon.icns");
@@ -15,8 +14,9 @@ fn set_dock_icon() {
             use objc::runtime::{Class, Object};
             use objc::{msg_send, sel, sel_impl};
 
-            let path_bytes = std::ffi::CString::new(icon_path).unwrap();
             let ns_string_cls = Class::get("NSString").unwrap();
+
+            let path_bytes = std::ffi::CString::new(icon_path).unwrap();
             let ns_path: *mut Object = msg_send![
                 ns_string_cls,
                 stringWithUTF8String: path_bytes.as_ptr()
@@ -26,11 +26,33 @@ fn set_dock_icon() {
             let image: *mut Object = msg_send![ns_image_cls, alloc];
             let image: *mut Object = msg_send![image, initWithContentsOfFile: ns_path];
 
+            let app_cls = Class::get("NSApplication").unwrap();
+            let app: *mut Object = msg_send![app_cls, sharedApplication];
+
             if !image.is_null() {
-                let app_cls = Class::get("NSApplication").unwrap();
-                let app: *mut Object = msg_send![app_cls, sharedApplication];
                 let _: () = msg_send![app, setApplicationIconImage: image];
             }
+
+            let name_bytes = std::ffi::CString::new("Moxin Studio").unwrap();
+            let ns_name: *mut Object = msg_send![
+                ns_string_cls,
+                stringWithUTF8String: name_bytes.as_ptr()
+            ];
+            let main_menu: *mut Object = msg_send![app, mainMenu];
+            if !main_menu.is_null() {
+                let first_item: *mut Object = msg_send![main_menu, itemAtIndex: 0i64];
+                if !first_item.is_null() {
+                    let submenu: *mut Object = msg_send![first_item, submenu];
+                    if !submenu.is_null() {
+                        let _: () = msg_send![submenu, setTitle: ns_name];
+                    }
+                    let _: () = msg_send![first_item, setTitle: ns_name];
+                }
+            }
+
+            let process_info_cls = Class::get("NSProcessInfo").unwrap();
+            let process_info: *mut Object = msg_send![process_info_cls, processInfo];
+            let _: () = msg_send![process_info, setProcessName: ns_name];
         }
     });
 }
@@ -61,9 +83,24 @@ fn main() {
         eprintln!("PANIC: {}", msg);
     }));
 
-    // Set Dock icon after the run loop starts (needed for cargo run)
+    // Set process name early so the Dock shows "Moxin Studio" from the start
     #[cfg(target_os = "macos")]
-    set_dock_icon();
+    unsafe {
+        use objc::runtime::Class;
+        use objc::{msg_send, sel, sel_impl};
+        let ns_string_cls = Class::get("NSString").unwrap();
+        let name_bytes = std::ffi::CString::new("Moxin Studio").unwrap();
+        let ns_name: *mut objc::runtime::Object = msg_send![
+            ns_string_cls, stringWithUTF8String: name_bytes.as_ptr()
+        ];
+        let process_info_cls = Class::get("NSProcessInfo").unwrap();
+        let process_info: *mut objc::runtime::Object = msg_send![process_info_cls, processInfo];
+        let _: () = msg_send![process_info, setProcessName: ns_name];
+    }
+
+    // Set Dock icon and menubar title after the run loop starts (needed for cargo run)
+    #[cfg(target_os = "macos")]
+    set_dock_icon_and_name();
 
     // macOS 26 requires setActivationPolicy to be called before the event loop
     // starts, otherwise NSAssertMainEventQueueIsCurrentEventQueue fires on the
