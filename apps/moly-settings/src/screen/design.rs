@@ -575,6 +575,35 @@ live_design! {
 
             // Spacer
             <View> { width: Fill, height: Fill }
+
+            // ── App Info / Update Section ────────────────────────────────
+            <View> {
+                width: Fill, height: Fit
+                flow: Right
+                align: {y: 0.5}
+                padding: {left: 24, right: 24, bottom: 20}
+                spacing: 12
+
+                version_label = <Label> {
+                    width: Fill
+                    draw_text: {
+                        color: #9ca3af
+                        text_style: <FONT_REGULAR>{ font_size: 11.0 }
+                    }
+                }
+
+                update_status_label = <Label> {
+                    width: Fit
+                    draw_text: {
+                        color: #16a39c
+                        text_style: <FONT_MEDIUM>{ font_size: 11.0 }
+                    }
+                }
+
+                check_update_button = <TestButton> {
+                    text: "Check for Updates"
+                }
+            }
         }
 
         // Add Provider Modal (overlay)

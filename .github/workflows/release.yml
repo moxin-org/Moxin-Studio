@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: macos-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: macos-cargo-
+
+      - name: Build release binary
+        run: cargo build -p moly-shell --release
+
+      - name: Package .app bundle
+        run: |
+          cp target/release/moxin-studio "Moxin Studio.app/Contents/MacOS/moxin-studio"
+          chmod +x "Moxin Studio.app/Contents/MacOS/moxin-studio"
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "Moxin Studio.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "Moxin Studio.app/Contents/Info.plist"
+
+      - name: Create DMG
+        run: |
+          mkdir -p dmg-staging
+          cp -R "Moxin Studio.app" dmg-staging/
+          ln -s /Applications dmg-staging/Applications
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          DMG_NAME="MoxinStudio-${VERSION}-arm64.dmg"
+
+          hdiutil create -volname "Moxin Studio" \
+            -srcfolder dmg-staging \
+            -ov -format UDZO \
+            "$DMG_NAME"
+
+          echo "DMG_NAME=$DMG_NAME" >> "$GITHUB_ENV"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: ${{ env.DMG_NAME }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.DMG_NAME }}
+          generate_release_notes: true
+          draft: true
+          body: |
+            ## Installation
+
+            1. Download `${{ env.DMG_NAME }}`
+            2. Open the DMG and drag **Moxin Studio** to Applications
+            3. On first launch: right-click the app → **Open** (required for unsigned apps)
+
+            ### Requirements
+            - macOS 14.0+ (Sonoma) on Apple Silicon (M1–M5)
+            - For local model inference: [OminiX-API](https://github.com/OminiX-ai/OminiX-API)
+
+            ### Cloud-only mode
+            No additional setup needed — open Settings and add your API keys for OpenAI, Anthropic, Gemini, DeepSeek, or other providers.

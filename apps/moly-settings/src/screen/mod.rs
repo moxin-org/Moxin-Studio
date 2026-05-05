@@ -4,9 +4,9 @@ pub mod design;
 
 use makepad_widgets::*;
 use makepad_component::widgets::{MpSwitchWidgetExt, MpSwitchWidgetRefExt};
-use moly_data::{Store, ProviderId, ProviderConnectionStatus};
+use moly_data::{Store, ProviderId, ProviderConnectionStatus, UpdateInfo, check_for_update};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::path::Path;
 use serde::Deserialize;
 
@@ -77,6 +77,10 @@ pub struct SettingsApp {
     /// Connection status per provider (persists after testing)
     #[rust]
     provider_statuses: HashMap<String, ProviderConnectionStatus>,
+
+    /// Receiver for update check result
+    #[rust]
+    update_rx: Option<mpsc::Receiver<Option<UpdateInfo>>>,
 }
 
 impl Widget for SettingsApp {
@@ -147,6 +151,32 @@ impl Widget for SettingsApp {
 
         // Handle A2UI toggle
         self.handle_a2ui_toggle(cx, scope, &actions);
+
+        // Check for Updates button
+        if self.view.button(ids!(check_update_button)).clicked(&actions) {
+            self.view.label(ids!(update_status_label)).set_text(cx, "Checking...");
+            self.view.redraw(cx);
+            let (tx, rx) = mpsc::channel();
+            self.update_rx = Some(rx);
+            std::thread::spawn(move || {
+                let result = check_for_update(env!("CARGO_PKG_VERSION"));
+                let _ = tx.send(match result {
+                    Ok(info) => info,
+                    Err(_) => None,
+                });
+            });
+        }
+
+        // Poll update check result
+        if let Some(info) = self.update_rx.as_ref().and_then(|rx| rx.try_recv().ok()) {
+            self.update_rx = None;
+            let msg = match info {
+                Some(ref u) => format!("v{} available — click Download", u.version),
+                None => "You're up to date!".to_string(),
+            };
+            self.view.label(ids!(update_status_label)).set_text(cx, &msg);
+            self.view.redraw(cx);
+        }
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
@@ -165,6 +195,10 @@ impl Widget for SettingsApp {
 
         // Show/hide add provider modal
         self.view.view(ids!(add_provider_modal)).set_visible(cx, self.modal_visible);
+
+        // Set version label
+        self.view.label(ids!(version_label)).set_text(cx,
+            &format!("Moxin Studio v{}", env!("CARGO_PKG_VERSION")));
 
         // Update provider list from store
         if let Some(store) = scope.data.get::<Store>() {

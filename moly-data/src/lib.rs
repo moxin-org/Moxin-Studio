@@ -10,6 +10,7 @@ pub mod preferences;
 pub mod providers;
 pub mod providers_manager;
 pub mod store;
+pub mod update_checker;
 
 pub use chats::{ChatData, ChatId, Chats};
 pub use local_models::{
@@ -30,6 +31,7 @@ pub use model_registry::{
 };
 pub use model_runtime_client::{ModelRuntimeClient, ServerModelStatus, ServerModelInfo, ensure_server_running, kill_server_process};
 pub use store::{Store, StoreAction};
+pub use update_checker::{UpdateInfo, check_for_update};
 
 // A2UI (AI-to-UI) exports
 pub use a2ui_builder::A2uiBuilder;

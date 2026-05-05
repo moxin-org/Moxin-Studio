@@ -1,6 +1,6 @@
 use makepad_widgets::*;
 
-use moly_data::{ChatId, Store, StoreAction, ModelRegistry, RegistryCategory, ModelRuntimeClient, ensure_server_running};
+use moly_data::{ChatId, Store, StoreAction, ModelRegistry, RegistryCategory, ModelRuntimeClient, ensure_server_running, UpdateInfo, check_for_update};
 use std::sync::mpsc;
 use std::path::Path;
 use moly_kit::a2ui::{A2uiSurface, A2uiSurfaceAction};
@@ -356,6 +356,92 @@ live_design! {
                     width: Fill, height: Fill
                     flow: Down
 
+                // Update banner (hidden by default)
+                update_banner = <View> {
+                    width: Fill, height: 36
+                    visible: false
+                    flow: Right
+                    align: {y: 0.5}
+                    padding: {left: 16, right: 8}
+                    show_bg: true
+                    draw_bg: {
+                        fn pixel(self) -> vec4 {
+                            return #16a39c;
+                        }
+                    }
+
+                    update_label = <Label> {
+                        width: Fill
+                        text: ""
+                        draw_text: {
+                            color: #ffffff
+                            text_style: <FONT_MEDIUM>{ font_size: 12.0 }
+                        }
+                    }
+
+                    update_download_btn = <View> {
+                        width: Fit, height: 24
+                        padding: {left: 10, right: 10}
+                        margin: {right: 4}
+                        cursor: Hand
+                        align: {x: 0.5, y: 0.5}
+                        show_bg: true
+                        draw_bg: {
+                            instance hover: 0.0
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 4.0);
+                                sdf.fill(mix(#ffffff33, #ffffff55, self.hover));
+                                return sdf.result;
+                            }
+                        }
+                        animator: {
+                            hover = {
+                                default: off
+                                off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
+                                on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                        }
+                        <Label> {
+                            text: "Download"
+                            draw_text: {
+                                color: #ffffff
+                                text_style: <FONT_SEMIBOLD>{ font_size: 11.0 }
+                            }
+                        }
+                    }
+
+                    update_dismiss_btn = <View> {
+                        width: 24, height: 24
+                        cursor: Hand
+                        align: {x: 0.5, y: 0.5}
+                        show_bg: true
+                        draw_bg: {
+                            instance hover: 0.0
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 4.0);
+                                sdf.fill(mix(#00000000, #ffffff33, self.hover));
+                                return sdf.result;
+                            }
+                        }
+                        animator: {
+                            hover = {
+                                default: off
+                                off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
+                                on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                        }
+                        <Label> {
+                            text: "✕"
+                            draw_text: {
+                                color: #ffffffcc
+                                text_style: { font_size: 13.0 }
+                            }
+                        }
+                    }
+                }
+
                 // Header
                 header = <View> {
                     width: Fill, height: 72
@@ -385,7 +471,7 @@ live_design! {
 
                     logo_light = <Image> {
                         source: (IMG_LOGO)
-                        width: 280, height: 44
+                        width: 180, height: 43
                     }
 
                     title_label = <Label> {
@@ -1516,6 +1602,12 @@ pub struct App {
     ram_used_gb: f64,
     #[rust]
     ram_total_gb: f64,
+
+    // ── Update checker state ────────────────────────────────────────────────
+    #[rust]
+    update_rx: Option<mpsc::Receiver<Option<UpdateInfo>>>,
+    #[rust]
+    update_info: Option<UpdateInfo>,
 }
 
 impl LiveHook for App {
@@ -1580,6 +1672,9 @@ impl MatchEvent for App {
         // Start RAM usage polling (every 1 second)
         self.ram_timer = cx.start_interval(1.0);
         self.poll_ram_usage(cx);
+
+        // Check for updates in background
+        self.start_update_check();
 
         ::log::info!("App initialized with Store and MolyAppData");
     }
@@ -1717,6 +1812,18 @@ impl MatchEvent for App {
                 }
             }
 
+        }
+
+        // ── Update banner buttons ──────────────────────────────────────────
+        if self.ui.view(ids!(body.body_layout.update_banner.update_download_btn)).finger_down(&actions).is_some() {
+            if let Some(ref info) = self.update_info {
+                let _ = std::process::Command::new("open").arg(&info.download_url).spawn();
+            }
+        }
+        if self.ui.view(ids!(body.body_layout.update_banner.update_dismiss_btn)).finger_down(&actions).is_some() {
+            self.update_info = None;
+            self.ui.view(ids!(body.body_layout.update_banner)).set_visible(cx, false);
+            self.ui.redraw(cx);
         }
 
         // Handle hamburger menu click
@@ -2036,6 +2143,9 @@ impl AppMain for App {
 
         // Poll model load thread for completion
         self.poll_load_result(cx);
+
+        // Poll update checker for result
+        self.poll_update_result(cx);
 
         // Pass Store to child widgets via Scope
         // TODO: Migrate apps to use MolyAppData instead of Store directly
@@ -2865,6 +2975,44 @@ impl App {
             self.current_view = NavigationTarget::ActiveChat;
             self.store.set_current_view("ActiveChat");
             self.apply_view_state(cx, NavigationTarget::ActiveChat);
+        }
+    }
+
+    // ── Update checker ────────────────────────────────────────────────────
+
+    fn start_update_check(&mut self) {
+        let (tx, rx) = mpsc::channel();
+        self.update_rx = Some(rx);
+        std::thread::spawn(move || {
+            let current = env!("CARGO_PKG_VERSION");
+            let result = check_for_update(current);
+            let _ = tx.send(match result {
+                Ok(info) => info,
+                Err(e) => {
+                    ::log::warn!("Update check failed: {}", e);
+                    None
+                }
+            });
+        });
+    }
+
+    fn poll_update_result(&mut self, cx: &mut Cx) {
+        let result = self.update_rx.as_ref().and_then(|rx| rx.try_recv().ok());
+        let Some(info) = result else { return };
+        self.update_rx = None;
+
+        if let Some(update) = info {
+            let msg = format!(
+                "Moxin Studio {} is available — you have {}",
+                update.version,
+                env!("CARGO_PKG_VERSION"),
+            );
+            self.ui.label(ids!(body.body_layout.update_banner.update_label))
+                .set_text(cx, &msg);
+            self.ui.view(ids!(body.body_layout.update_banner))
+                .set_visible(cx, true);
+            self.update_info = Some(update);
+            self.ui.redraw(cx);
         }
     }
 
