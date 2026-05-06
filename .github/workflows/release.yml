@@ -77,6 +77,9 @@ jobs:
           </plist>
           PLIST
 
+      - name: Ad-hoc code sign
+        run: codesign --force --deep -s - "Moxin Studio.app"
+
       - name: Create DMG
         run: |
           mkdir -p dmg-staging
@@ -110,7 +113,11 @@ jobs:
 
             1. Download `${{ env.DMG_NAME }}`
             2. Open the DMG and drag **Moxin Studio** to Applications
-            3. On first launch: right-click the app → **Open** (required for unsigned apps)
+            3. Before first launch, run in Terminal:
+               ```
+               xattr -cr /Applications/Moxin\ Studio.app
+               ```
+               (This removes the macOS quarantine flag for unsigned apps)
 
             ### Requirements
             - macOS 14.0+ (Sonoma) on Apple Silicon (M1–M5)
