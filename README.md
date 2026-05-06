@@ -50,15 +50,15 @@ Open the **Model Hub** from the sidebar, click **Download** on any model, then c
 ## Features
 
 - **Local AI inference** — Run LLMs, vision models, image generation, speech recognition, and TTS directly on your Mac via OminiX-API
-- **Cloud providers** — Also supports OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, SiliconFlow, and Ollama
 - **Model Hub** — Discover, download, and run models directly from the app
 - **Voice I/O** — Speech-to-text and text-to-speech with voice cloning
 - **MCP support** — Model Context Protocol for tool use
 - **Chat history** — Persistent, searchable conversation history
+- **Cloud fallback** — Optionally connect to cloud providers alongside local models
 
-### Cloud Providers
+### Cloud Providers (Optional)
 
-You can also use cloud providers alongside local models. Open Settings and add your API keys:
+For models not available locally, you can add cloud API keys in Settings:
 
 | Provider | What you get |
 |----------|-------------|
