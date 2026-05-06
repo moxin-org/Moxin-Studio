@@ -1,43 +1,32 @@
 <div align="center">
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/75442e77-0211-4fb5-9a17-1a0bed89426f">
-  <img width="500" alt="Moxin Studio" src="[https://github.com/user-attachments/assets/b168cf1c-8e2f-4969-bffa-b57ee33950c0](https://github.com/user-attachments/assets/063e750e-ac4b-48e6-ba20-f9b4ac5bbe04)" />
+  <source media="(prefers-color-scheme: dark)" srcset="moxin-studio-logo-dark.png">
+  <img width="300" alt="Moxin Studio" src="moxin-studio-logo.png" />
 </picture>
 
-# Moxin Studio
+**A native desktop AI app built with pure Rust and [Makepad](https://github.com/makepad/makepad).**
+
+Chat with local and cloud models, generate images, transcribe speech, and manage your model library — all without a Python runtime.
+
+[Download](#download) | [Build from Source](#build-from-source) | [Local Inference Setup](#local-inference-setup) | [Cloud Providers](#cloud-providers)
 
 </div>
 
-A native desktop AI application built with pure Rust and [Makepad](https://github.com/makepad/makepad). Chat with local and cloud models, generate images, transcribe speech, and manage your model library — all without a Python runtime.
+---
 
-## The OminiX Platform
+## Download
 
-OminiX is a full-stack, pure Rust AI platform for on-device inference. Moxin Studio is the user-facing layer of a three-part stack:
+Get the latest `.dmg` from the [Releases page](https://github.com/moxin-org/Moxin-Studio/releases).
 
-```
-┌─────────────────────────────────────────────┐
-│            Moxin Studio (this repo)         │  Desktop UI (Rust + Makepad)
-│         Chat · Models · Voice · Settings    │
-└──────────────────────┬──────────────────────┘
-                       │ OpenAI-compatible REST/WS
-┌──────────────────────▼──────────────────────┐
-│               OminiX-API                    │  Local inference server (pure Rust)
-│    LLM · ASR · TTS · Image endpoints        │
-└──────────────────────┬──────────────────────┘
-                       │ Rust crate interface
-┌──────────────────────▼──────────────────────┐
-│               OminiX-MLX                    │  On-device inference backend
-│      Metal-accelerated · MLX framework      │  (Apple Silicon — more platforms coming)
-└─────────────────────────────────────────────┘
-```
+1. Open the DMG and drag **Moxin Studio** to Applications
+2. Before first launch, run in Terminal:
+   ```bash
+   xattr -cr /Applications/Moxin\ Studio.app
+   ```
+3. Open Moxin Studio from Applications
 
-- [**OminiX-MLX**](https://github.com/OminiX-ai/OminiX-MLX) — The Apple Silicon inference engine. Pure-Rust bindings to Apple's MLX framework — Metal GPU, unified memory, lazy evaluation. Supports LLMs (Qwen, GLM, Mistral, MiniCPM), VLMs, ASR (Paraformer, Qwen3-ASR), TTS (GPT-SoVITS), and image generation (FLUX, Z-Image).
-
-- [**OminiX-API**](https://github.com/OminiX-ai/OminiX-API) — Local AI inference server in pure Rust. OpenAI-compatible HTTP and WebSocket endpoints for chat completions, transcription, TTS, and image generation. Supports dynamic model loading at runtime without restarts.
-
-- **Moxin Studio** (this repo) — The desktop application. Connects to OminiX-API for local inference, and also supports cloud providers (OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter, SiliconFlow, and more).
-
-All three projects are at [github.com/OminiX-ai](https://github.com/OminiX-ai).
+> **Requirements:** macOS 14.0+ (Sonoma) on Apple Silicon (M1-M5)
 
 ## Features
 
@@ -47,13 +36,108 @@ All three projects are at [github.com/OminiX-ai](https://github.com/OminiX-ai).
 - **Voice I/O** — Speech-to-text and text-to-speech with voice cloning
 - **MCP support** — Model Context Protocol for tool use
 - **Chat history** — Persistent, searchable conversation history
-- **Dark mode** — Full light/dark theme
 
-## Project Structure
+## The Moxin / OminiX Platform
+
+Moxin Studio is the user-facing layer of a three-part pure Rust AI platform:
+
+```
+┌─────────────────────────────────────────────┐
+│            Moxin Studio (this repo)         │  Desktop UI (Rust + Makepad)
+│         Chat · Models · Voice · Settings    │
+└──────────────────────┬──────────────────────┘
+                       │ OpenAI-compatible REST/WS
+┌──────────────────────▼──────────────────────┐
+│               OminiX-API                    │  Local inference server (pure Rust)
+│    LLM · ASR · TTS · Image endpoints       │
+└──────────────────────┬──────────────────────┘
+                       │ Rust crate interface
+┌──────────────────────▼──────────────────────┐
+│               OminiX-MLX                    │  On-device inference backend
+│      Metal-accelerated · MLX framework      │  (Apple Silicon)
+└─────────────────────────────────────────────┘
+```
+
+- [**OminiX-MLX**](https://github.com/OminiX-ai/OminiX-MLX) — Apple Silicon inference engine. Pure-Rust bindings to Apple's MLX framework with Metal GPU acceleration. Supports LLMs, VLMs, ASR, TTS, and image generation.
+- [**OminiX-API**](https://github.com/OminiX-ai/OminiX-API) — Local inference server. OpenAI-compatible HTTP and WebSocket endpoints with dynamic model loading at runtime.
+- **Moxin Studio** (this repo) — Desktop application. Connects to OminiX-API for local inference and cloud providers for remote models.
+
+## Cloud Providers
+
+No local setup required — just open Settings and add your API keys:
+
+| Provider | What you get |
+|----------|-------------|
+| OpenAI | GPT-4o, DALL-E, Whisper |
+| Anthropic | Claude Opus, Sonnet, Haiku |
+| Google Gemini | Gemini Pro, Flash |
+| DeepSeek | DeepSeek-V3, R1 |
+| OpenRouter | Access to 100+ models |
+| SiliconFlow | Cost-effective inference |
+| Ollama | Local models via Ollama |
+
+## Local Inference Setup
+
+To run models locally on your Mac, you need **OminiX-API** (the inference server). Moxin Studio connects to it automatically.
+
+### 1. Install OminiX-API
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/OminiX-ai/OminiX-API/main/install.sh | sh
+```
+
+This installs `ominix-api` to `/usr/local/bin` and creates `~/.OminiX/` for config and models.
+
+### 2. Download a model from the Hub
+
+Open Moxin Studio, go to the **Model Hub** (sidebar), and click **Download** on any model. Models are downloaded to `~/.OminiX/models/`.
+
+### 3. Load and chat
+
+Click **Load** on a downloaded model. Moxin Studio will auto-start OminiX-API and route your chat through it. No manual server management needed.
+
+### Supported local model types
+
+| Type | Examples |
+|------|----------|
+| LLM | Qwen3, GLM-4, Mistral, MiniCPM |
+| VLM | Qwen3-VL (vision + language) |
+| ASR | Paraformer, Qwen3-ASR |
+| TTS | GPT-SoVITS (voice cloning) |
+| Image | FLUX.2-klein, Z-Image-Turbo |
+
+## Build from Source
+
+<details>
+<summary>For contributors and developers</summary>
+
+### Requirements
+
+- macOS 14.0+ (Sonoma) on Apple Silicon
+- Rust 1.82+
+- Xcode Command Line Tools (`xcode-select --install`)
+
+### Clone and run
+
+```bash
+git clone https://github.com/moxin-org/Moxin-Studio.git
+cd Moxin-Studio
+cargo run -p moly-shell --bin moxin-studio
+```
+
+### Build the .app bundle
+
+```bash
+./build-and-run.sh
+```
+
+This compiles a release build, copies it into the `Moxin Studio.app` bundle, and launches it.
+
+### Project structure
 
 ```
 Moxin-Studio/
-├── moly-shell/          # Main application binary (moxin-studio)
+├── moly-shell/          # Main application binary
 ├── moly-data/           # Shared state, persistence, API clients
 ├── moly-widgets/        # Reusable UI components and theming
 └── apps/
@@ -64,23 +148,7 @@ Moxin-Studio/
     └── moly-voice/      # Voice I/O
 ```
 
-## Requirements
-
-- macOS 14.0+ (Sonoma)
-- Rust 1.82+
-- For local inference: OminiX-API with an Apple Silicon Mac (M1–M5)
-
-## Getting Started
-
-```bash
-git clone https://github.com/OminiX-ai/Moxin-Studio.git
-cd Moxin-Studio
-cargo run -p moly-shell --bin moxin-studio
-```
-
-For local model inference, set up [OminiX-API](https://github.com/OminiX-ai/OminiX-API) — see its README. Moxin Studio will auto-start the API server when you load a model from the Hub.
-
-For cloud providers, open Settings in the app and configure your API keys.
+</details>
 
 ## License
 
