@@ -35,14 +35,86 @@ jobs:
       - name: Package .app bundle
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          WORKSPACE_ROOT="$(pwd)"
 
           mkdir -p "Moxin Studio.app/Contents/MacOS"
           mkdir -p "Moxin Studio.app/Contents/Resources"
 
-          cp target/release/moxin-studio "Moxin Studio.app/Contents/MacOS/moxin-studio"
-          chmod +x "Moxin Studio.app/Contents/MacOS/moxin-studio"
+          cp target/release/moxin-studio "Moxin Studio.app/Contents/MacOS/moxin-studio-bin"
+          chmod +x "Moxin Studio.app/Contents/MacOS/moxin-studio-bin"
 
           cp moly-shell/resources/AppIcon.icns "Moxin Studio.app/Contents/Resources/AppIcon.icns"
+
+          # Bundle all resources that Makepad dep() references need at runtime.
+          # Makepad bakes absolute compile-time paths into the binary.
+          # We copy resources into Contents/Resources/deps/ and the launcher
+          # script creates symlinks to recreate the expected directory tree.
+
+          RESOURCES="Moxin Studio.app/Contents/Resources/deps"
+          mkdir -p "$RESOURCES"
+
+          # 1) Workspace crate resources (moly-shell, moly-widgets, apps)
+          for crate_dir in moly-shell moly-widgets apps/moly-chat apps/moly-settings apps/moly-mcp apps/moly-hub apps/moly-voice; do
+            if [ -d "$crate_dir/resources" ]; then
+              mkdir -p "$RESOURCES/workspace/$crate_dir"
+              cp -R "$crate_dir/resources" "$RESOURCES/workspace/$crate_dir/"
+            fi
+          done
+
+          # 2) Git dependency resources (makepad-widgets, makepad-component, moly-kit, etc.)
+          for dep_dir in $(find ~/.cargo/git/checkouts -maxdepth 4 -name "resources" -type d 2>/dev/null); do
+            # Get the checkout path up to the commit hash dir
+            # e.g. ~/.cargo/git/checkouts/makepad-abc123/deadbeef/widgets/resources
+            # We want to preserve from the checkouts dir onward
+            rel="${dep_dir#$HOME/.cargo/git/checkouts/}"
+            mkdir -p "$RESOURCES/git/$(dirname "$rel")"
+            cp -R "$dep_dir" "$RESOURCES/git/$(dirname "$rel")/"
+          done
+
+          # 3) Registry dependency resources
+          for dep_dir in $(find ~/.cargo/registry/src -maxdepth 4 -name "resources" -type d 2>/dev/null); do
+            rel="${dep_dir#$HOME/.cargo/registry/src/}"
+            mkdir -p "$RESOURCES/registry/$(dirname "$rel")"
+            cp -R "$dep_dir" "$RESOURCES/registry/$(dirname "$rel")/"
+          done
+
+          # Record the paths used at compile time so the launcher can recreate them
+          echo "$WORKSPACE_ROOT" > "$RESOURCES/workspace_root.txt"
+          echo "$HOME" > "$RESOURCES/build_home.txt"
+
+          # Create launcher script
+          cat > "Moxin Studio.app/Contents/MacOS/moxin-studio" <<'LAUNCHER'
+          #!/bin/bash
+          # Launcher: recreate compile-time resource paths as symlinks
+          SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+          RESOURCES="$SCRIPT_DIR/../Resources/deps"
+
+          if [ -f "$RESOURCES/workspace_root.txt" ] && [ -f "$RESOURCES/build_home.txt" ]; then
+            BUILD_WORKSPACE="$(cat "$RESOURCES/workspace_root.txt")"
+            BUILD_HOME="$(cat "$RESOURCES/build_home.txt")"
+
+            # Symlink workspace root (for crate://self/ resources)
+            if [ ! -e "$BUILD_WORKSPACE" ] && [ -d "$RESOURCES/workspace" ]; then
+              sudo mkdir -p "$(dirname "$BUILD_WORKSPACE")"
+              sudo ln -sf "$RESOURCES/workspace" "$BUILD_WORKSPACE"
+            fi
+
+            # Symlink cargo git checkouts (for crate://makepad-widgets/ etc.)
+            if [ -d "$RESOURCES/git" ] && [ ! -e "$BUILD_HOME/.cargo/git/checkouts" ]; then
+              mkdir -p "$BUILD_HOME/.cargo/git"
+              ln -sf "$RESOURCES/git" "$BUILD_HOME/.cargo/git/checkouts"
+            fi
+
+            # Symlink cargo registry (for registry dependencies)
+            if [ -d "$RESOURCES/registry" ] && [ ! -e "$BUILD_HOME/.cargo/registry/src" ]; then
+              mkdir -p "$BUILD_HOME/.cargo/registry"
+              ln -sf "$RESOURCES/registry" "$BUILD_HOME/.cargo/registry/src"
+            fi
+          fi
+
+          exec "$SCRIPT_DIR/moxin-studio-bin" "$@"
+          LAUNCHER
+          chmod +x "Moxin Studio.app/Contents/MacOS/moxin-studio"
 
           cat > "Moxin Studio.app/Contents/Info.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
