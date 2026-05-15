@@ -824,15 +824,19 @@ impl ModelHubApp {
         let show_can  = is_dl;
         let show_rm   = is_done;
         let show_prog = is_dl;
+        let show_download_btn = (show_dl || is_dl) && !is_manual;
+        let download_text = if is_dl { "Downloading..." } else { "Download" };
 
         // Load / Unload buttons (not applicable to ImageEdit — sd.cpp runs directly)
         let is_image_edit = self.active_panel == ActivePanel::ImageEdit;
         let show_load    = is_done && load == ModelLoadState::Unloaded && !is_image_edit;
         let show_unload  = is_done && load == ModelLoadState::Loaded && !is_image_edit;
         let show_loading = is_done && load == ModelLoadState::Loading && !is_image_edit;
+        let loading_text = if show_loading { "Loading model..." } else { "" };
 
         let dot      = combined_dot_value(dl, load);
         let st_label = combined_status_label(dl, load);
+        let status_text = if show_download_btn { "" } else { st_label };
         let name     = model.name.clone();
         let desc     = model.description.clone();
         let size     = model.storage.size_display.clone();
@@ -877,8 +881,11 @@ impl ModelHubApp {
         } else {
             msg
         };
+        let show_status_msg = !msg.is_empty();
         // Disable Load button if another model is blocking
         let show_load = show_load && blocker_name.is_none();
+        let show_action_row = show_can || show_rm;
+        let show_runtime_row = show_load || show_unload || show_loading || show_chat;
 
         // ids!() is compile-time — each panel's paths must be written explicitly.
         match self.active_panel {
@@ -887,17 +894,22 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_llm_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_status_text)).set_text(cx, st_label);
+                self.view.button(ids!(hub_llm_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
-                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_dl);
+                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
+                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, show_chat);
+                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
                     if let Some(p) = pct {
@@ -914,17 +926,22 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_vlm_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_status_text)).set_text(cx, st_label);
+                self.view.button(ids!(hub_vlm_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
-                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_dl);
+                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
+                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, show_chat);
+                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
                     if let Some(p) = pct {
@@ -941,16 +958,21 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_asr_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_status_text)).set_text(cx, st_label);
+                self.view.button(ids!(hub_asr_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
-                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_dl);
+                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
+                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
                     if let Some(p) = pct {
@@ -967,16 +989,21 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_tts_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_status_text)).set_text(cx, st_label);
+                self.view.button(ids!(hub_tts_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
-                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_dl);
+                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
+                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
                     if let Some(p) = pct {
@@ -993,16 +1020,21 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_image_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.label(ids!(hub_image_panel.hub_panel_header.panel_status_text)).set_text(cx, st_label);
+                self.view.button(ids!(hub_image_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.label(ids!(hub_image_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
-                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_dl);
+                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
+                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_image_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
                     if let Some(p) = pct {
@@ -1019,16 +1051,21 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_image_edit_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_status_text)).set_text(cx, st_label);
+                self.view.button(ids!(hub_image_edit_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
-                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_dl);
+                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
+                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
                     if let Some(p) = pct {
@@ -1045,17 +1082,22 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_video_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.label(ids!(hub_video_panel.hub_panel_header.panel_status_text)).set_text(cx, st_label);
+                self.view.button(ids!(hub_video_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.label(ids!(hub_video_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
-                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_dl);
+                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
+                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_video_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, false);
+                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
                     if let Some(p) = pct {
@@ -2445,6 +2487,10 @@ impl ModelHubApp {
 
 impl ModelHubApp {
     fn start_download(&mut self, cx: &mut Cx, model_id: &str) {
+        if self.model_states.get(model_id).copied() == Some(ModelUiState::Downloading) {
+            return;
+        }
+
         let Some(model) = self.registry.as_ref()
             .and_then(|r| r.models.iter().find(|m| m.id == model_id)).cloned()
         else { return };
@@ -2528,6 +2574,8 @@ impl ModelHubApp {
             }
         }
 
+        let has_status_updates = !done.is_empty() || !failed.is_empty();
+
         for id in done {
             self.model_states.insert(id.clone(), ModelUiState::Downloaded);
             self.download_states.remove(&id);
@@ -2542,6 +2590,11 @@ impl ModelHubApp {
                 self.refresh_header_for(cx, &id);
             }
             ::log::error!("Download error for {}: {}", id, err);
+        }
+
+        if has_status_updates {
+            self.rebuild_list();
+            self.view.redraw(cx);
         }
 
         // Live progress for the selected model
