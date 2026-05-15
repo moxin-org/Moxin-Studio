@@ -376,7 +376,7 @@ live_design! {
     HubPanelHeader = <View> {
         width: Fill, height: Fit
         flow: Down
-        padding: {left: 28, right: 28, top: 22, bottom: 16}
+        padding: {left: 28, right: 28, top: 22, bottom: 10}
 
         // Model name
         <View> {
@@ -412,8 +412,12 @@ live_design! {
             width: Fill, height: Fit
             flow: Right
             align: {y: 0.5}
-            margin: {bottom: 12}
+            margin: {bottom: 8}
             panel_status_dot = <HubStatusDot> {}
+            panel_download_btn = <HubActionButton> {
+                text: "Download"
+                visible: false
+            }
             panel_status_text = <Label> {
                 margin: {right: 8}
                 draw_text: {
@@ -463,11 +467,11 @@ live_design! {
         }
 
         // Action buttons
-        <View> {
+        panel_action_row = <View> {
             width: Fill, height: Fit
             flow: Right
-            margin: {bottom: 10}
-            panel_download_btn = <HubActionButton> { text: "Download" }
+            margin: {bottom: 3}
+            visible: false
             panel_cancel_btn = <HubActionButton> {
                 text: "Cancel"
                 visible: false
@@ -481,11 +485,12 @@ live_design! {
         }
 
         // Runtime controls: Load / Unload (shown when model is downloaded)
-        <View> {
+        panel_runtime_row = <View> {
             width: Fill, height: Fit
             flow: Right
             align: {y: 0.5}
-            margin: {bottom: 8}
+            margin: {bottom: 4}
+            visible: false
             panel_load_btn = <HubActionButton> {
                 text: "Load"
                 visible: false
@@ -513,7 +518,7 @@ live_design! {
             visible: false
             width: Fill, height: Fit
             flow: Down
-            margin: {bottom: 8}
+            margin: {bottom: 4}
             panel_progress_bg = <View> {
                 width: Fill, height: 8
                 show_bg: true
