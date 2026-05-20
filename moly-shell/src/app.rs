@@ -115,9 +115,9 @@ live_design! {
     // Note: Button's draw_bg/draw_text/draw_icon don't support custom instance variables,
     // so we use fixed colors for light mode. Theme switching can be done by swapping button styles.
     SidebarButton = <View> {
-        width: Fill, height: Fit
+        width: Fill, height: 38
         padding: {top: 7, bottom: 7, left: 12, right: 12}
-        margin: {bottom: 1}
+        margin: {bottom: 2}
         flow: Right
         align: {x: 0.0, y: 0.5}
         cursor: Hand
@@ -129,11 +129,14 @@ live_design! {
 
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                let normal = (PANEL_BG);
-                let gray = vec4(0.92, 0.93, 0.94, 1.0);
-                let color = mix(normal, gray, max(self.hover * 0.5, self.selected));
-                sdf.box(2.0, 2.0, self.rect_size.x - 4.0, self.rect_size.y - 4.0, 6.0);
+                let normal = #00000000;
+                let hover = #f3f4f6;
+                let selected_bg = #eef2f7;
+                let color = mix(mix(normal, hover, self.hover), selected_bg, self.selected);
+                sdf.box(2.0, 2.0, self.rect_size.x - 4.0, self.rect_size.y - 4.0, 7.0);
                 sdf.fill(color);
+                sdf.box(2.0, 8.0, 3.0, self.rect_size.y - 16.0, 1.5);
+                sdf.fill(vec4(0.04, 0.63, 0.59, self.selected));
                 return sdf.result;
             }
         }
@@ -147,13 +150,13 @@ live_design! {
         }
 
         sidebar_icon = <Image> {
-            width: 24, height: 24
+            width: 22, height: 22
             margin: {right: 12}
             fit: Smallest
         }
         sidebar_label = <Label> {
             draw_text: {
-                text_style: <FONT_MEDIUM>{ font_size: 13.0 }
+                text_style: <FONT_MEDIUM>{ font_size: 12.5 }
                 color: (TEXT_PRIMARY)
             }
         }
@@ -161,9 +164,9 @@ live_design! {
 
     // Accent CTA button for "New Chat" — blue background, white text/icon
     NewChatButton = <Button> {
-        width: Fill, height: Fit
-        padding: {top: 11, bottom: 11, left: 16, right: 16}
-        margin: {bottom: 16}
+        width: Fill, height: 40
+        padding: {top: 9, bottom: 9, left: 14, right: 14}
+        margin: {bottom: 18}
         align: {x: 0.5, y: 0.5}
         icon_walk: {width: 18, height: 18, margin: {right: 8}}
 
@@ -212,7 +215,7 @@ live_design! {
         }
 
         draw_text: {
-            text_style: <FONT_SEMIBOLD>{ font_size: 13.0 }
+            text_style: <FONT_SEMIBOLD>{ font_size: 12.5 }
             color: #ffffff
         }
 
@@ -576,7 +579,7 @@ live_design! {
                         }
 
                         selector_label = <Label> {
-                            text: "Select a model to load"
+                            text: "No model loaded"
                             draw_text: {
                                 color: #374151
                                 text_style: <FONT_MEDIUM>{ font_size: 13.0 }
@@ -690,7 +693,7 @@ live_design! {
                         draw_bg: {
                             color: #ffffff
                         }
-                        flow: Down, padding: {top: 16, bottom: 16, left: 8, right: 8}
+                        flow: Down, padding: {top: 12, bottom: 12, left: 10, right: 8}
 
                         // Scrollable area for all sidebar content except Settings
                         sidebar_scroll = <ScrollYView> {
@@ -706,7 +709,7 @@ live_design! {
                             // CHAT section
                             chat_section_label = <View> {
                                 width: Fill, height: Fit
-                                padding: {top: 8, bottom: 2, left: 12, right: 8}
+                                padding: {top: 4, bottom: 6, left: 12, right: 8}
                                 <Label> {
                                     text: "HISTORY"
                                     draw_text: { color: (TEXT_MUTED), text_style: <FONT_MEDIUM>{ font_size: 10.0 } }
@@ -727,7 +730,7 @@ live_design! {
                                 chat_history_visible = <View> {
                                     width: Fill, height: Fit
                                     flow: Down
-                                    padding: {left: 32}
+                                    padding: {left: 30, top: 2, bottom: 2}
 
                                     chat_item_0 = <ChatListItem> {}
                                     chat_item_1 = <ChatListItem> {}
@@ -735,7 +738,7 @@ live_design! {
 
                                     // Show More button
                                     show_more_btn = <View> {
-                                        width: Fill, height: 28
+                                        width: Fill, height: 26
                                         padding: {left: 8, right: 8}
                                         align: {y: 0.5}
                                         flow: Right
@@ -754,7 +757,7 @@ live_design! {
                                             text: "Show More"
                                             draw_text: {
                                                 color: (TEXT_SECONDARY)
-                                                text_style: { font_size: 11.0 }
+                                                text_style: { font_size: 10.5 }
                                             }
                                         }
                                         show_more_arrow = <Label> {
@@ -783,7 +786,7 @@ live_design! {
                             // MODELS section
                             models_section_label = <View> {
                                 width: Fill, height: Fit
-                                padding: {top: 8, bottom: 2, left: 12, right: 8}
+                                padding: {top: 12, bottom: 6, left: 12, right: 8}
                                 <Label> {
                                     text: "MODELS"
                                     draw_text: { color: (TEXT_MUTED), text_style: <FONT_MEDIUM>{ font_size: 10.0 } }
@@ -806,11 +809,12 @@ live_design! {
                         // Info button pinned at bottom of sidebar
                         <View> {
                             width: Fill, height: 1
+                            margin: {left: 0, right: 8, top: 8, bottom: 4}
                             show_bg: true
                             draw_bg: { color: #f1f5f9 }
                         }
                         sidebar_info_btn = <View> {
-                            width: Fill, height: 36
+                            width: Fill, height: 34
                             padding: {left: 12, right: 12}
                             align: {y: 0.5}
                             flow: Right
@@ -2271,7 +2275,7 @@ impl App {
     /// Update selector pill label and eject-button visibility.
     fn update_selector_bar(&mut self, cx: &mut Cx) {
         let label_text = match self.shell_load_state {
-            ShellModelLoadState::Unloaded => "Select a model to load".to_string(),
+            ShellModelLoadState::Unloaded => "No model loaded".to_string(),
             ShellModelLoadState::Loading  => format!("Loading {}...", self.loaded_model_name),
             ShellModelLoadState::Loaded   => self.loaded_model_name.clone(),
             ShellModelLoadState::Error    => "Load failed — click to retry".to_string(),

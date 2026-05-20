@@ -84,8 +84,8 @@ live_design! {
     // ── Inline mini progress bar ──
 
     HubInlineProgress = <View> {
-        width: 120, height: 3
-        margin: {top: 4, left: 22}
+        width: 118, height: 3
+        margin: {top: 5, left: 22}
         show_bg: true
         draw_bg: {
             instance progress: 0.0
@@ -104,63 +104,61 @@ live_design! {
 
     HubModelListItem = <View> {
         width: Fill, height: Fit
-        padding: {left: 14, right: 8, top: 9, bottom: 9}
-        margin: {left: 4, right: 4}
+        padding: {left: 0, right: 0, top: 0, bottom: 0}
+        margin: {left: 8, right: 8, bottom: 3}
         flow: Down
         cursor: Hand
         event_order: Down
         show_bg: true
         draw_bg: {
-            instance hover: 0.0
             instance selected: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(1.0, 1.0, self.rect_size.x - 2.0, self.rect_size.y - 2.0, 6.0);
-                let base = #ffffff;
-                let gray = #eaecf0;
-                let strength = max(self.hover * 0.5, self.selected);
-                sdf.fill(mix(base, gray, strength));
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
+                let base = #00000000;
+                let selected = #e4ebf5;
+                sdf.fill(mix(base, selected, self.selected));
+                sdf.box(0.0, 9.0, 3.0, self.rect_size.y - 18.0, 1.5);
+                sdf.fill(vec4(0.04, 0.63, 0.59, self.selected));
                 return sdf.result;
             }
         }
-        animator: {
-            hover = {
-                default: off
-                off = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 0.0}} }
-                on  = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 1.0}} }
-            }
-        }
         item_row = <View> {
-            width: Fill, height: Fit
+            width: Fill, height: 44
             flow: Right
             align: {y: 0.5}
+            padding: {left: 14, right: 10}
             model_status = <HubStatusDot> {}
             model_name = <Label> {
                 width: Fill
+                flow: Right
+                align: {y: 0.5}
+                margin: {right: 8}
                 draw_text: {
                     fn get_color(self) -> vec4 {
-                        return #1f2937;
+                        return #111827;
                     }
-                    text_style: <FONT_REGULAR>{ font_size: 11.3 }
+                    text_style: <FONT_MEDIUM>{ font_size: 11.0 }
                     wrap: Ellipsis
                 }
             }
             downloaded_badge = <View> {
-                width: Fit, height: Fit
-                padding: {left: 6, right: 6, top: 2, bottom: 2}
-                margin: {left: 6}
+                width: 52, height: 26
+                padding: {left: 6, right: 6, top: 0, bottom: 0}
+                margin: {left: 0}
+                align: {x: 0.5, y: 0.5}
                 visible: false
                 show_bg: true
                 draw_bg: {
                     fn pixel(self) -> vec4 {
                         let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                        sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 3.0);
-                        sdf.fill(#d1fae5);
+                        sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 5.0);
+                        sdf.fill(#c9f7dc);
                         return sdf.result;
                     }
                 }
                 <Label> {
-                    text: "Downloaded"
+                    text: "Ready"
                     draw_text: {
                         fn get_color(self) -> vec4 { return #047857; }
                         text_style: <FONT_MEDIUM>{ font_size: 9.0 }
@@ -175,11 +173,11 @@ live_design! {
 
     HubSubfolderGroupHeader = <View> {
         width: Fill, height: Fit
-        padding: {left: 22, right: 14, top: 6, bottom: 2}
+        padding: {left: 24, right: 14, top: 12, bottom: 5}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #ffffff;
+                return #f7f9fc;
             }
         }
         subfolder_header_label = <Label> {
@@ -196,11 +194,11 @@ live_design! {
 
     HubCategoryGroupHeader = <View> {
         width: Fill, height: Fit
-        padding: {left: 14, right: 14, top: 10, bottom: 4}
+        padding: {left: 18, right: 14, top: 12, bottom: 6}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #ffffff;
+                return #f7f9fc;
             }
         }
         category_header_label = <Label> {
@@ -216,8 +214,8 @@ live_design! {
     // ── Action button ──
 
     HubActionButton = <Button> {
-        width: Fit, height: 32
-        padding: {left: 14, right: 14}
+        width: Fit, height: 30
+        padding: {left: 13, right: 13}
         margin: {right: 8}
         animator: {
             hover = {
@@ -237,7 +235,7 @@ live_design! {
             instance danger: 0.0   // 0=primary blue, 1=danger red
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 5.0);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 6.0);
                 let primary = mix(#3b82f6, #2563fa, self.hover);
                 let danger  = mix(#b91c1c, #991b1b, self.hover); // no e after digit
                 let color = mix(primary, danger, self.danger);
@@ -247,7 +245,7 @@ live_design! {
         }
         draw_text: {
             fn get_color(self) -> vec4 { return #ffffff; }
-            text_style: <FONT_MEDIUM>{ font_size: 11.0 }
+            text_style: <FONT_MEDIUM>{ font_size: 11.2 }
         }
     }
 
@@ -297,7 +295,7 @@ live_design! {
 
     HubInputLabel = <Label> {
         width: Fill, height: Fit
-        margin: {bottom: 4, top: 12}
+        margin: {bottom: 3, top: 9}
         draw_text: {
             fn get_color(self) -> vec4 {
                 return #6b7280;
@@ -308,13 +306,15 @@ live_design! {
 
     HubPanelInput = <TextInput> {
         width: Fill, height: 36
-        margin: {bottom: 4}
-        cursor: Text
+        padding: {left: 12, right: 12, top: 9, bottom: 7}
+        label_align: {x: 0.0, y: 0.5}
+        margin: {bottom: 2}
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 5.0);
-                sdf.fill(#f1f5f9);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
+                sdf.fill(#ffffff);
+                sdf.stroke(#e5e7eb, 1.0);
                 return sdf.result;
             }
         }
@@ -338,13 +338,14 @@ live_design! {
     HubPanelOutput = <View> {
         width: Fill, height: Fit
         padding: {left: 12, right: 12, top: 10, bottom: 10}
-        margin: {top: 4, bottom: 16}
+        margin: {top: 0, bottom: 12}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 6.0);
-                sdf.fill(#f1f5f9);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
+                sdf.fill(#ffffff);
+                sdf.stroke(#e5e7eb, 1.0);
                 return sdf.result;
             }
         }
@@ -376,20 +377,20 @@ live_design! {
     HubPanelHeader = <View> {
         width: Fill, height: Fit
         flow: Down
-        padding: {left: 28, right: 28, top: 22, bottom: 16}
+        padding: {left: 30, right: 30, top: 22, bottom: 14}
 
         // Model name
         <View> {
             width: Fill, height: Fit
             flow: Right
             align: {y: 0.5}
-            margin: {bottom: 6}
+            margin: {bottom: 7}
             panel_model_name = <Label> {
                 draw_text: {
                     fn get_color(self) -> vec4 {
                         return #1f2937;
                     }
-                    text_style: <FONT_SEMIBOLD>{ font_size: 20.0 }
+                    text_style: <FONT_SEMIBOLD>{ font_size: 20.5 }
                 }
             }
         }
@@ -397,12 +398,12 @@ live_design! {
         // Description
         panel_model_desc = <Label> {
             width: Fill, height: Fit
-            margin: {bottom: 10}
+            margin: {bottom: 12}
             draw_text: {
                 fn get_color(self) -> vec4 {
                     return #6b7280;
                 }
-                text_style: { font_size: 12.0 }
+                text_style: { font_size: 12.2 }
                 wrap: Word
             }
         }
@@ -412,8 +413,12 @@ live_design! {
             width: Fill, height: Fit
             flow: Right
             align: {y: 0.5}
-            margin: {bottom: 12}
+            margin: {bottom: 10}
             panel_status_dot = <HubStatusDot> {}
+            panel_download_btn = <HubActionButton> {
+                text: "Download"
+                visible: false
+            }
             panel_status_text = <Label> {
                 margin: {right: 8}
                 draw_text: {
@@ -463,32 +468,33 @@ live_design! {
         }
 
         // Action buttons
-        <View> {
+        panel_action_row = <View> {
             width: Fill, height: Fit
             flow: Right
-            margin: {bottom: 10}
-            panel_download_btn = <HubActionButton> { text: "Download" }
+            margin: {bottom: 6}
+            visible: false
             panel_cancel_btn = <HubActionButton> {
                 text: "Cancel"
-                visible: false
-                draw_bg: { danger: 1.0 }
-            }
-            panel_remove_btn = <HubActionButton> {
-                text: "Remove"
                 visible: false
                 draw_bg: { danger: 1.0 }
             }
         }
 
         // Runtime controls: Load / Unload (shown when model is downloaded)
-        <View> {
+        panel_runtime_row = <View> {
             width: Fill, height: Fit
             flow: Right
             align: {y: 0.5}
-            margin: {bottom: 8}
+            margin: {bottom: 6}
+            visible: false
             panel_load_btn = <HubActionButton> {
                 text: "Load"
                 visible: false
+            }
+            panel_remove_btn = <HubActionButton> {
+                text: "Remove"
+                visible: false
+                draw_bg: { danger: 1.0 }
             }
             panel_unload_btn = <HubActionButton> {
                 text: "Unload"
@@ -501,7 +507,7 @@ live_design! {
                     }
                     text_style: <FONT_MEDIUM>{ font_size: 11.5 }
                 }
-                text: "Loading model..."
+                text: ""
             }
             panel_chat_btn = <HubActionButton> {
                 text: "Open in Chat"
@@ -513,15 +519,15 @@ live_design! {
             visible: false
             width: Fill, height: Fit
             flow: Down
-            margin: {bottom: 8}
+            margin: {top: 2, bottom: 4}
             panel_progress_bg = <View> {
-                width: Fill, height: 8
+                width: Fill, height: 6
                 show_bg: true
                 draw_bg: {
                     fn pixel(self) -> vec4 {
                         let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                        sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 4.0);
-                        sdf.fill(#d1d5db);
+                        sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 3.0);
+                        sdf.fill(#d9dee7);
                         return sdf.result;
                     }
                 }
@@ -529,7 +535,7 @@ live_design! {
             }
             panel_progress_text = <Label> {
                 width: Fill, height: Fit
-                margin: {top: 5}
+                margin: {top: 6}
                 draw_text: {
                     fn get_color(self) -> vec4 {
                         return #6b7280;
@@ -542,9 +548,10 @@ live_design! {
         // Manual install / error message
         panel_status_msg = <Label> {
             width: Fill, height: Fit
+            margin: {top: 1}
             draw_text: {
                 fn get_color(self) -> vec4 {
-                    return #6b7280;
+                    return #64748b;
                 }
                 text_style: { font_size: 11.5 }
                 wrap: Word
@@ -623,23 +630,14 @@ live_design! {
         event_order: Down
         show_bg: true
         draw_bg: {
-            instance hover: 0.0
             instance selected: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(1.0, 1.0, self.rect_size.x - 2.0, self.rect_size.y - 2.0, 6.0);
                 let base = #ffffff;
                 let gray = #eaecf0;
-                let strength = max(self.hover * 0.5, self.selected);
-                sdf.fill(mix(base, gray, strength));
+                sdf.fill(mix(base, gray, self.selected));
                 return sdf.result;
-            }
-        }
-        animator: {
-            hover = {
-                default: off
-                off = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 0.0}} }
-                on  = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 1.0}} }
             }
         }
         flow: Right
@@ -720,17 +718,17 @@ live_design! {
 
         // ── Left panel ──────────────────────────────────────────────────────
         hub_left_panel = <View> {
-            width: 270, height: Fill
+            width: 276, height: Fill
             flow: Down
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #ffffff; }
+                fn pixel(self) -> vec4 { return #f7f9fc; }
             }
 
             // Header
             <View> {
-                width: Fill, height: 52
-                padding: {left: 16, right: 16}
+                width: Fill, height: 54
+                padding: {left: 18, right: 18}
                 align: {y: 0.5}
                 hub_title_label = <Label> {
                     text: "Model Hub"
@@ -738,7 +736,7 @@ live_design! {
                         fn get_color(self) -> vec4 {
                             return #1f2937;
                         }
-                        text_style: <FONT_SEMIBOLD>{ font_size: 15.0 }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 15.5 }
                     }
                 }
             }
@@ -755,16 +753,18 @@ live_design! {
             // Search
             <View> {
                 width: Fill, height: Fit
-                padding: {left: 10, right: 10, top: 10, bottom: 4}
+                padding: {left: 14, right: 14, top: 10, bottom: 8}
                 search_input = <TextInput> {
-                    width: Fill, height: 32
+                    width: Fill, height: 34
+                    padding: {left: 12, right: 12, top: 8, bottom: 7}
+                    label_align: {x: 0.0, y: 0.5}
                     empty_text: "Search models..."
-                    cursor: Text
                     draw_bg: {
                         fn pixel(self) -> vec4 {
                             let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 5.0);
-                            sdf.fill(#f1f5f9);
+                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
+                            sdf.fill(#ffffff);
+                            sdf.stroke(#e5e7eb, 1.0);
                             return sdf.result;
                         }
                     }
@@ -818,7 +818,7 @@ live_design! {
             flow: Overlay
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #f8fafc; }
+                fn pixel(self) -> vec4 { return #f7f9fc; }
             }
 
             // Empty state (default)
@@ -856,24 +856,24 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 28, right: 28, top: 16, bottom: 32}
+                    padding: {left: 30, right: 30, top: 14, bottom: 28}
 
                     <HubInputLabel> { text: "SYSTEM PROMPT" }
                     llm_system = <HubPanelInput> {
-                        height: 72
+                        height: 58
                         empty_text: "You are a helpful assistant..."
                     }
 
                     <HubInputLabel> { text: "USER MESSAGE" }
                     llm_user = <HubPanelInput> {
-                        height: 60
+                        height: 48
                         empty_text: "Type your message here..."
                     }
 
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 10, bottom: 16}
+                        margin: {top: 8, bottom: 12}
                         llm_generate_btn = <HubActionButton> { text: "Generate" }
                     }
 
@@ -902,13 +902,13 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 28, right: 28, top: 16, bottom: 32}
+                    padding: {left: 30, right: 30, top: 14, bottom: 28}
 
                     <HubInputLabel> { text: "IMAGE FILE" }
 
                     // Drag-and-drop zone for image files from Finder
                     vlm_drop_zone = <View> {
-                        width: Fill, height: 64
+                        width: Fill, height: 56
                         margin: {bottom: 6}
                         show_bg: true
                         draw_bg: {
@@ -949,14 +949,14 @@ live_design! {
 
                     <HubInputLabel> { text: "USER MESSAGE" }
                     vlm_user = <HubPanelInput> {
-                        height: 60
+                        height: 48
                         empty_text: "Describe this image..."
                     }
 
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 10, bottom: 16}
+                        margin: {top: 8, bottom: 12}
                         vlm_generate_btn = <HubActionButton> { text: "Generate" }
                     }
 
@@ -985,7 +985,7 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 28, right: 28, top: 16, bottom: 32}
+                    padding: {left: 30, right: 30, top: 14, bottom: 28}
 
                     <HubInputLabel> { text: "AUDIO FILE" }
                     <View> {
@@ -1003,7 +1003,7 @@ live_design! {
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 10, bottom: 16}
+                        margin: {top: 8, bottom: 12}
                         asr_transcribe_btn = <HubActionButton> { text: "Transcribe" }
                     }
 
@@ -1032,7 +1032,7 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 28, right: 28, top: 16, bottom: 32}
+                    padding: {left: 30, right: 30, top: 14, bottom: 28}
 
                     <HubInputLabel> { text: "VOICE" }
                     tts_voice_list = <PortalList> {
@@ -1050,7 +1050,7 @@ live_design! {
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 10, bottom: 16}
+                        margin: {top: 8, bottom: 12}
                         tts_generate_btn = <HubActionButton> { text: "Generate & Play" }
                     }
 
@@ -1093,11 +1093,11 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 28, right: 28, top: 16, bottom: 32}
+                    padding: {left: 30, right: 30, top: 14, bottom: 28}
 
                     <HubInputLabel> { text: "PROMPT" }
                     img_prompt = <HubPanelInput> {
-                        height: 72
+                        height: 58
                         empty_text: "A beautiful landscape..."
                     }
 
@@ -1110,7 +1110,7 @@ live_design! {
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 10, bottom: 16}
+                        margin: {top: 8, bottom: 12}
                         img_generate_btn = <HubActionButton> { text: "Generate Image" }
                     }
 
@@ -1167,13 +1167,13 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 28, right: 28, top: 16, bottom: 32}
+                    padding: {left: 30, right: 30, top: 14, bottom: 28}
 
                     <HubInputLabel> { text: "REFERENCE IMAGE" }
 
                     // Drag-and-drop zone for reference image
                     img_edit_drop_zone = <View> {
-                        width: Fill, height: 64
+                        width: Fill, height: 56
                         margin: {bottom: 6}
                         show_bg: true
                         draw_bg: {
@@ -1214,14 +1214,14 @@ live_design! {
 
                     <HubInputLabel> { text: "EDIT INSTRUCTION" }
                     img_edit_prompt = <HubPanelInput> {
-                        height: 72
+                        height: 58
                         empty_text: "Change the background to a sunny beach..."
                     }
 
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 10, bottom: 16}
+                        margin: {top: 8, bottom: 12}
                         img_edit_btn = <HubActionButton> { text: "Edit Image" }
                     }
 
@@ -1280,18 +1280,18 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 28, right: 28, top: 16, bottom: 32}
+                    padding: {left: 30, right: 30, top: 14, bottom: 28}
 
                     <HubInputLabel> { text: "PROMPT" }
                     vid_prompt = <HubPanelInput> {
-                        height: 72
+                        height: 58
                         empty_text: "A cat walking on the beach at sunset..."
                     }
 
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 10, bottom: 16}
+                        margin: {top: 8, bottom: 12}
                         vid_generate_btn = <HubActionButton> { text: "Generate Video" }
                     }
 
@@ -1431,7 +1431,7 @@ live_design! {
 
                 <HubInputLabel> { text: "TRANSCRIPT (OPTIONAL)" }
                 voice_transcript_input = <HubPanelInput> {
-                    height: 60
+                    height: 48
                     empty_text: "Text spoken in the audio file..."
                 }
 
@@ -1485,7 +1485,7 @@ live_design! {
 
                 <HubInputLabel> { text: "TEXT TO SYNTHESIZE" }
                 voice_synth_text = <HubPanelInput> {
-                    height: 72
+                    height: 58
                     empty_text: "Enter text to synthesize..."
                 }
 
