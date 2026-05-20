@@ -357,6 +357,10 @@ pub struct ChatApp {
     #[rust]
     chat_initialized: bool,
 
+    /// Whether the message list should jump to the bottom after loading a session
+    #[rust]
+    needs_scroll_to_bottom_after_load: bool,
+
     /// Whether we're in welcome mode (centered input) - only changes on explicit send
     /// Defaults to true so new chats start in welcome mode
     #[rust(true)]
@@ -586,6 +590,7 @@ impl ChatApp {
         // when we have access to Cx and Scope
         self.current_chat_id = Some(chat_id);
         self.chat_initialized = false; // Force re-initialization
+        self.needs_scroll_to_bottom_after_load = true;
         self.last_synced_message_count = 0;
         self.had_writing_message = false;
         self.last_synced_content_len = 0;
@@ -646,6 +651,10 @@ impl ChatApp {
         }
 
         self.chat_initialized = true;
+        if self.needs_scroll_to_bottom_after_load {
+            self.view.chat(ids!(main_content.chat)).write().messages_ref().write().instant_scroll_to_bottom(cx);
+            self.needs_scroll_to_bottom_after_load = false;
+        }
         self.view.redraw(cx);
     }
 

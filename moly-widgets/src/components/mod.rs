@@ -41,9 +41,9 @@ live_design! {
     // ========================================================================
 
     pub ChatListItem = <View> {
-        width: Fill, height: 30
-        padding: {left: 8, right: 8}
-        margin: {right: 4}
+        width: Fill, height: 34
+        padding: {left: 10, right: 10}
+        margin: {right: 6, bottom: 4}
         align: {y: 0.5}
         cursor: Hand
         show_bg: true
@@ -53,9 +53,9 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 let base = #00000000;
-                let hover = #f3f4f6;
+                let hover = #f6f7f9;
                 let selected = #eef2f7;
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 6.0);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
                 sdf.fill(mix(mix(base, hover, self.hover), selected, self.selected));
                 return sdf.result;
             }
@@ -63,15 +63,16 @@ live_design! {
         animator: {
             hover = {
                 default: off
-                off = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 0.0}} }
-                on  = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 1.0}} }
+                off = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 0.0}} }
+                on  = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 1.0}} }
             }
         }
         title = <Label> {
-            width: Fill
+            width: Fill, height: 16
+            flow: Right
             draw_text: {
                 color: #4b5563
-                text_style: { font_size: 10.5 }
+                text_style: { font_size: 11.0 }
                 wrap: Ellipsis
             }
         }

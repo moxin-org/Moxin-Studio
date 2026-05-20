@@ -135,8 +135,6 @@ live_design! {
                 let color = mix(mix(normal, hover, self.hover), selected_bg, self.selected);
                 sdf.box(2.0, 2.0, self.rect_size.x - 4.0, self.rect_size.y - 4.0, 7.0);
                 sdf.fill(color);
-                sdf.box(2.0, 8.0, 3.0, self.rect_size.y - 16.0, 1.5);
-                sdf.fill(vec4(0.04, 0.63, 0.59, self.selected));
                 return sdf.result;
             }
         }
@@ -144,8 +142,8 @@ live_design! {
         animator: {
             hover = {
                 default: off
-                off = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 0.0}} }
-                on  = { from: {all: Forward{duration: 0.12}}, apply: {draw_bg: {hover: 1.0}} }
+                off = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 0.0}} }
+                on  = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 1.0}} }
             }
         }
 
@@ -174,22 +172,22 @@ live_design! {
             hover = {
                 default: off,
                 off = {
-                    from: {all: Forward {duration: 0.15}}
+                    from: {all: Forward {duration: 0.0}}
                     apply: { draw_bg: {hover: 0.0} }
                 }
                 on = {
-                    from: {all: Forward {duration: 0.15}}
+                    from: {all: Forward {duration: 0.0}}
                     apply: { draw_bg: {hover: 1.0} }
                 }
             }
             pressed = {
                 default: off,
                 off = {
-                    from: {all: Forward {duration: 0.1}}
+                    from: {all: Forward {duration: 0.0}}
                     apply: { draw_bg: {pressed: 0.0} }
                 }
                 on = {
-                    from: {all: Forward {duration: 0.1}}
+                    from: {all: Forward {duration: 0.0}}
                     apply: { draw_bg: {pressed: 1.0} }
                 }
             }
@@ -243,12 +241,13 @@ live_design! {
         visible: false
         flow: Right
         align: {y: 0.5}
+        margin: {left: 8, right: 8}
         padding: {left: 16, right: 12}
         spacing: 8
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #ffffff;
+                return #00000000;
             }
         }
 
@@ -730,7 +729,7 @@ live_design! {
                                 chat_history_visible = <View> {
                                     width: Fill, height: Fit
                                     flow: Down
-                                    padding: {left: 30, top: 2, bottom: 2}
+                                    padding: {left: 30, top: 4, bottom: 4}
 
                                     chat_item_0 = <ChatListItem> {}
                                     chat_item_1 = <ChatListItem> {}
@@ -738,8 +737,9 @@ live_design! {
 
                                     // Show More button
                                     show_more_btn = <View> {
-                                        width: Fill, height: 26
-                                        padding: {left: 8, right: 8}
+                                        width: Fill, height: 30
+                                        margin: {top: 2, right: 6}
+                                        padding: {left: 10, right: 10}
                                         align: {y: 0.5}
                                         flow: Right
                                         cursor: Hand
@@ -747,9 +747,10 @@ live_design! {
                                         draw_bg: {
                                             instance hover: 0.0
                                             fn pixel(self) -> vec4 {
-                                                let base = (PANEL_BG);
-                                                let hover_color = (HOVER_BG);
-                                                return mix(base, hover_color, self.hover);
+                                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
+                                                sdf.fill(mix(#f1f5f9, #e5eaf1, self.hover));
+                                                return sdf.result;
                                             }
                                         }
                                         show_more_label = <Label> {
@@ -757,7 +758,7 @@ live_design! {
                                             text: "Show More"
                                             draw_text: {
                                                 color: (TEXT_SECONDARY)
-                                                text_style: { font_size: 10.5 }
+                                                text_style: <FONT_MEDIUM>{ font_size: 11.0 }
                                             }
                                         }
                                         show_more_arrow = <Label> {
@@ -774,7 +775,7 @@ live_design! {
                                 chat_history_more = <View> {
                                     width: Fill, height: Fit
                                     flow: Down
-                                    padding: {left: 32}
+                                    padding: {left: 30, top: 2}
                                     visible: false
 
                                     chat_item_3 = <ChatListItem> { visible: false }
@@ -1226,23 +1227,71 @@ live_design! {
                         cursor: Arrow
                     }
 
-                    // Centered dropdown panel row
+                    // Dropdown panel row, positioned under the model selector at open time.
                     dropdown_wrapper = <View> {
-                        width: Fill, height: Fit
+                        abs_pos: vec2(0.0, 72.0)
+                        width: 540, height: Fit
+                        clip_x: false, clip_y: false
                         flow: Right
-                        align: {x: 0.5}
-                        margin: {top: 72}
 
-                        dropdown_panel = <RoundedView> {
-                            width: 540, height: Fit
+                        dropdown_panel = <View> {
+                            width: Fill, height: Fit
+                            clip_x: false, clip_y: false
                             show_bg: true
                             draw_bg: {
                                 color: #ffffff
-                                border_radius: 12.0
-                                border_color: #d1d5db
-                                border_size: 1.0
+                                uniform border_radius: 14.0
+                                uniform border_size: 0.0
+                                uniform border_color: #00000000
+                                uniform shadow_color: #0002
+                                uniform shadow_radius: 12.0
+                                uniform shadow_offset: vec2(0.0, -2.0)
+
+                                varying rect_size2: vec2
+                                varying rect_size3: vec2
+                                varying rect_pos2: vec2
+                                varying rect_shift: vec2
+                                varying sdf_rect_pos: vec2
+                                varying sdf_rect_size: vec2
+
+                                fn vertex(self) -> vec4 {
+                                    let min_offset = min(self.shadow_offset, vec2(0.0));
+                                    self.rect_size2 = self.rect_size + 2.0 * vec2(self.shadow_radius);
+                                    self.rect_size3 = self.rect_size2 + abs(self.shadow_offset);
+                                    self.rect_pos2 = self.rect_pos - vec2(self.shadow_radius) + min_offset;
+                                    self.sdf_rect_size = self.rect_size2 - vec2(self.shadow_radius * 2.0 + self.border_size * 2.0);
+                                    self.sdf_rect_pos = -min_offset + vec2(self.border_size + self.shadow_radius);
+                                    self.rect_shift = -min_offset;
+                                    return self.clip_and_transform_vertex(self.rect_pos2, self.rect_size3)
+                                }
+
+                                fn pixel(self) -> vec4 {
+                                    let sdf = Sdf2d::viewport(self.pos * self.rect_size3);
+                                    sdf.box(
+                                        self.sdf_rect_pos.x,
+                                        self.sdf_rect_pos.y,
+                                        self.sdf_rect_size.x,
+                                        self.sdf_rect_size.y,
+                                        max(1.0, self.border_radius)
+                                    );
+                                    if sdf.shape > -1.0 {
+                                        let m = self.shadow_radius;
+                                        let o = self.shadow_offset + self.rect_shift;
+                                        let v = GaussShadow::rounded_box_shadow(
+                                            vec2(m) + o,
+                                            self.rect_size2 + o,
+                                            self.pos * (self.rect_size3 + vec2(m)),
+                                            self.shadow_radius * 0.5,
+                                            self.border_radius * 2.0
+                                        );
+                                        sdf.clear(self.shadow_color * v)
+                                    }
+                                    sdf.fill_keep(self.color);
+                                    return sdf.result
+                                }
                             }
                             flow: Down
+                            padding: {top: 6, bottom: 8}
 
                             // Panel header row
                             dropdown_header = <View> {
@@ -1280,8 +1329,6 @@ live_design! {
                                     }
                                 }
                             }
-
-                            <View> { width: Fill, height: 1, show_bg: true, draw_bg: { color: #e5e7eb } }
 
                             // Empty state
                             empty_state = <View> {
@@ -1931,6 +1978,7 @@ impl MatchEvent for App {
                 self.current_view = NavigationTarget::ActiveChat;
                 self.store.set_current_view("ActiveChat");
                 self.apply_view_state(cx, NavigationTarget::ActiveChat);
+                self.update_sidebar_chats(cx);
             }
         }
 
@@ -2195,9 +2243,28 @@ impl App {
         self.selector_open = true;
         self.delete_confirm_index = None;
         self.update_dropdown_slots(cx);
+        self.position_selector_dropdown(cx);
         self.ui.view(ids!(body.model_selector_dropdown.dropdown_wrapper.dropdown_panel.delete_confirm_panel)).set_visible(cx, false);
         self.ui.view(ids!(body.model_selector_dropdown)).set_visible(cx, true);
         self.ui.redraw(cx);
+    }
+
+    /// Align the dropdown panel center with the top model selector pill.
+    fn position_selector_dropdown(&mut self, cx: &mut Cx) {
+        const PANEL_WIDTH: f64 = 540.0;
+        const EDGE_GUTTER: f64 = 16.0;
+
+        let selector_rect = self.ui.view(ids!(body.body_layout.header.model_selector_btn)).area().rect(cx);
+        let body_rect = self.ui.view(ids!(body)).area().rect(cx);
+        let selector_center_x = selector_rect.pos.x + selector_rect.size.x * 0.5;
+        let min_x = body_rect.pos.x + EDGE_GUTTER;
+        let max_x = (body_rect.pos.x + body_rect.size.x - PANEL_WIDTH - EDGE_GUTTER).max(min_x);
+        let x = (selector_center_x - PANEL_WIDTH * 0.5).max(min_x).min(max_x);
+
+        let panel_pos = dvec2(x, 72.0);
+        self.ui.view(ids!(body.model_selector_dropdown.dropdown_wrapper)).apply_over(cx, live! {
+            abs_pos: (panel_pos)
+        });
     }
 
     /// Close the dropdown.
@@ -2639,12 +2706,13 @@ impl App {
     /// Populate sidebar chat history items (items 0-5) from the Store.
     /// Called on startup, after new chat creation, and after chat deletion.
     fn update_sidebar_chats(&mut self, cx: &mut Cx) {
-        let chats: Vec<_> = self.store.chats.get_sorted_chats()
+        let chats: Vec<_> = self.store.chats.saved_chats.iter()
             .into_iter()
             .filter(|c| !c.messages.is_empty())
             .take(6)
             .collect();
         let n = chats.len();
+        let current_chat_id = self.store.chats.current_chat_id;
         self.sidebar_chat_ids = chats.iter().map(|c| c.id).collect();
 
         macro_rules! update_item {
@@ -2652,16 +2720,11 @@ impl App {
                 let vis = $index < n;
                 self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.$section.$item))
                     .set_visible(cx, vis);
+                let selected = if vis && current_chat_id == Some(chats[$index].id) { 1.0 } else { 0.0 };
+                self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.$section.$item))
+                    .apply_over(cx, live! { draw_bg: { selected: (selected) } });
                 if vis {
-                    // Sanitize: collapse newlines, truncate to single display line
-                    let raw = &chats[$index].title;
-                    let single: String = raw.split_whitespace().collect::<Vec<_>>().join(" ");
-                    let display = if single.chars().count() > 28 {
-                        let head: String = single.chars().take(26).collect();
-                        format!("{}…", head)
-                    } else {
-                        single
-                    };
+                    let display = Self::sidebar_chat_title(&chats[$index].title);
                     self.ui.label(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.$section.$item.title))
                         .set_text(cx, &display);
                 }
@@ -2680,6 +2743,24 @@ impl App {
             .set_visible(cx, n > 3);
 
         self.ui.redraw(cx);
+    }
+
+    fn sidebar_chat_title(raw: &str) -> String {
+        let single = raw.split_whitespace().collect::<Vec<_>>().join(" ");
+        const MAX_UNITS: usize = 24;
+
+        let mut used = 0;
+        let mut out = String::new();
+        for ch in single.chars() {
+            let units = if ch.is_ascii() { 1 } else { 2 };
+            if used + units > MAX_UNITS {
+                out.push('…');
+                return out;
+            }
+            used += units;
+            out.push(ch);
+        }
+        out
     }
 
     /// Update chat history visibility based on expanded state

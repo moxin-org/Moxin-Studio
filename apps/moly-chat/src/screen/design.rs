@@ -841,6 +841,14 @@ live_design! {
             // Chat widget from moly-kit (always present)
             chat = <Chat> {
                 width: Fill, height: Fill
+                prompt = {
+                    margin: {left: 20, right: 20, bottom: 20}
+                    persistent = {
+                        draw_bg: {
+                            border_radius: 10.0
+                        }
+                    }
+                }
             }
 
             // Empty chat welcome overlay (shows greeting when no messages)
