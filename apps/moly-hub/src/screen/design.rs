@@ -214,9 +214,9 @@ live_design! {
     // ── Action button ──
 
     HubActionButton = <Button> {
-        width: Fit, height: 30
-        padding: {left: 13, right: 13}
-        margin: {right: 8}
+        width: Fit, height: 46
+        padding: {left: 28, right: 28}
+        margin: {right: 12}
         animator: {
             hover = {
                 default: off,
@@ -232,11 +232,14 @@ live_design! {
         draw_bg: {
             instance hover: 0.0
             instance pressed: 0.0
-            instance danger: 0.0   // 0=primary blue, 1=danger red
+            instance danger: 0.0
+            instance purple: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 6.0);
-                let primary = mix(#3b82f6, #2563fa, self.hover);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 22.0);
+                let teal = mix(#26aab5, #1f98a2, self.hover);
+                let purple = mix(#5b3de0, #4c30cf, self.hover);
+                let primary = mix(teal, purple, self.purple);
                 let danger  = mix(#b91c1c, #991b1b, self.hover); // no e after digit
                 let color = mix(primary, danger, self.danger);
                 sdf.fill(mix(color, color * 0.9, self.pressed));
@@ -245,7 +248,7 @@ live_design! {
         }
         draw_text: {
             fn get_color(self) -> vec4 { return #ffffff; }
-            text_style: <FONT_MEDIUM>{ font_size: 11.2 }
+            text_style: <FONT_SEMIBOLD>{ font_size: 13.0 }
         }
     }
 
@@ -295,26 +298,26 @@ live_design! {
 
     HubInputLabel = <Label> {
         width: Fill, height: Fit
-        margin: {bottom: 3, top: 9}
+        margin: {bottom: 6, top: 10}
         draw_text: {
             fn get_color(self) -> vec4 {
-                return #6b7280;
+                return #15242b;
             }
-            text_style: <FONT_SEMIBOLD>{ font_size: 10.0 }
+            text_style: <FONT_SEMIBOLD>{ font_size: 10.5 }
         }
     }
 
     HubPanelInput = <TextInput> {
         width: Fill, height: 36
-        padding: {left: 12, right: 12, top: 9, bottom: 7}
+        padding: {left: 24, right: 24, top: 22, bottom: 18}
         label_align: {x: 0.0, y: 0.5}
-        margin: {bottom: 2}
+        margin: {bottom: 14}
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
-                sdf.fill(#ffffff);
-                sdf.stroke(#e5e7eb, 1.0);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 12.0);
+                sdf.fill(#eef8fb);
+                sdf.stroke(#bfcfd5, 1.0);
                 return sdf.result;
             }
         }
@@ -322,7 +325,7 @@ live_design! {
             fn get_color(self) -> vec4 { return #374151; }
             color: #374151
             color_empty: #9ca3af
-            text_style: { font_size: 12.0 }
+            text_style: { font_size: 13.0 }
         }
         draw_cursor: {
             uniform border_radius: 0.5
@@ -336,16 +339,16 @@ live_design! {
     }
 
     HubPanelOutput = <View> {
-        width: Fill, height: Fit
-        padding: {left: 12, right: 12, top: 10, bottom: 10}
+        width: Fill, height: 160
+        padding: {left: 24, right: 24, top: 24, bottom: 24}
         margin: {top: 0, bottom: 12}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
-                sdf.fill(#ffffff);
-                sdf.stroke(#e5e7eb, 1.0);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 12.0);
+                sdf.fill(#eef8fb);
+                sdf.stroke(#cbd8dd, 1.0);
                 return sdf.result;
             }
         }
@@ -355,7 +358,7 @@ live_design! {
                 fn get_color(self) -> vec4 {
                     return #1f2937;
                 }
-                text_style: { font_size: 12.0 }
+                text_style: { font_size: 13.0 }
                 wrap: Word
             }
         }
@@ -373,144 +376,180 @@ live_design! {
         }
     }
 
+    HubStatCard = <View> {
+        width: Fill, height: 96
+        padding: {left: 16, right: 16, top: 14, bottom: 12}
+        margin: {right: 16}
+        flow: Down
+        show_bg: true
+        draw_bg: {
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 11.0);
+                sdf.fill(#eef8fb);
+                sdf.stroke(#bfcfd5, 1.0);
+                return sdf.result;
+            }
+        }
+    }
+
     // Shared model detail header included in each type panel
     HubPanelHeader = <View> {
         width: Fill, height: Fit
         flow: Down
-        padding: {left: 30, right: 30, top: 22, bottom: 14}
+        padding: {left: 16, right: 16, top: 16, bottom: 16}
 
-        // Model name
         <View> {
             width: Fill, height: Fit
             flow: Right
-            align: {y: 0.5}
-            margin: {bottom: 7}
-            panel_model_name = <Label> {
-                draw_text: {
-                    fn get_color(self) -> vec4 {
-                        return #1f2937;
+            margin: {bottom: 16}
+
+            <View> {
+                width: Fill, height: Fit
+                flow: Down
+                panel_model_name = <Label> {
+                    draw_text: {
+                        fn get_color(self) -> vec4 { return #101c22; }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 22.5 }
                     }
-                    text_style: <FONT_SEMIBOLD>{ font_size: 20.5 }
+                }
+
+                panel_model_desc = <Label> {
+                    width: Fill, height: Fit
+                    margin: {top: 10}
+                    draw_text: {
+                        fn get_color(self) -> vec4 { return #5f6f76; }
+                        text_style: { font_size: 14.0 }
+                        wrap: Word
+                    }
+                }
+            }
+
+            <View> {
+                width: Fit, height: Fit
+                flow: Right
+                align: {y: 0.5}
+                panel_action_row = <View> {
+                    width: Fit, height: Fit
+                    flow: Right
+                    visible: false
+                    panel_cancel_btn = <HubActionButton> {
+                        text: "Cancel"
+                        visible: false
+                        draw_bg: { danger: 1.0 }
+                    }
+                }
+                panel_runtime_row = <View> {
+                    width: Fit, height: Fit
+                    flow: Right
+                    align: {y: 0.5}
+                    visible: false
+                    panel_load_btn = <HubActionButton> {
+                        text: "Load"
+                        visible: false
+                        draw_bg: { purple: 1.0 }
+                    }
+                    panel_remove_btn = <HubActionButton> {
+                        text: "Remove"
+                        visible: false
+                        draw_bg: { danger: 1.0 }
+                    }
+                    panel_unload_btn = <HubActionButton> {
+                        text: "Unload"
+                        visible: false
+                    }
+                    panel_loading_label = <Label> {
+                        margin: {right: 12}
+                        draw_text: {
+                            fn get_color(self) -> vec4 { return #5b45d8; }
+                            text_style: <FONT_MEDIUM>{ font_size: 12.0 }
+                        }
+                        text: ""
+                    }
+                    panel_chat_btn = <HubActionButton> {
+                        text: "Open in Chat"
+                    }
+                }
+                panel_download_btn = <HubActionButton> {
+                    text: "Download"
+                    visible: false
+                    draw_bg: { purple: 1.0 }
                 }
             }
         }
 
-        // Description
-        panel_model_desc = <Label> {
-            width: Fill, height: Fit
-            margin: {bottom: 12}
-            draw_text: {
-                fn get_color(self) -> vec4 {
-                    return #6b7280;
-                }
-                text_style: { font_size: 12.2 }
-                wrap: Word
-            }
-        }
-
-        // Status + size + memory info row
         <View> {
             width: Fill, height: Fit
             flow: Right
-            align: {y: 0.5}
-            margin: {bottom: 10}
-            panel_status_dot = <HubStatusDot> {}
-            panel_download_btn = <HubActionButton> {
-                text: "Download"
-                visible: false
-            }
-            panel_status_text = <Label> {
-                margin: {right: 8}
-                draw_text: {
-                    fn get_color(self) -> vec4 {
-                        return #374151;
-                    }
-                    text_style: <FONT_MEDIUM>{ font_size: 11.0 }
-                }
-            }
-            panel_sep1 = <Label> {
-                text: "·"
-                margin: {right: 8}
-                draw_text: {
-                    fn get_color(self) -> vec4 {
-                        return #9ca3af;
-                    }
-                    text_style: { font_size: 11.0 }
-                }
-            }
-            panel_size_text = <Label> {
-                margin: {right: 8}
-                draw_text: {
-                    fn get_color(self) -> vec4 {
-                        return #6b7280;
-                    }
-                    text_style: { font_size: 11.0 }
-                }
-            }
-            panel_sep2 = <Label> {
-                text: "·"
-                margin: {right: 8}
-                draw_text: {
-                    fn get_color(self) -> vec4 {
-                        return #9ca3af;
-                    }
-                    text_style: { font_size: 11.0 }
-                }
-            }
-            panel_mem_text = <Label> {
-                draw_text: {
-                    fn get_color(self) -> vec4 {
-                        return #6b7280;
-                    }
-                    text_style: { font_size: 11.0 }
-                }
-            }
-        }
+            margin: {bottom: 16}
 
-        // Action buttons
-        panel_action_row = <View> {
-            width: Fill, height: Fit
-            flow: Right
-            margin: {bottom: 6}
-            visible: false
-            panel_cancel_btn = <HubActionButton> {
-                text: "Cancel"
-                visible: false
-                draw_bg: { danger: 1.0 }
-            }
-        }
-
-        // Runtime controls: Load / Unload (shown when model is downloaded)
-        panel_runtime_row = <View> {
-            width: Fill, height: Fit
-            flow: Right
-            align: {y: 0.5}
-            margin: {bottom: 6}
-            visible: false
-            panel_load_btn = <HubActionButton> {
-                text: "Load"
-                visible: false
-            }
-            panel_remove_btn = <HubActionButton> {
-                text: "Remove"
-                visible: false
-                draw_bg: { danger: 1.0 }
-            }
-            panel_unload_btn = <HubActionButton> {
-                text: "Unload"
-                visible: false
-            }
-            panel_loading_label = <Label> {
-                draw_text: {
-                    fn get_color(self) -> vec4 {
-                        return #6366f1;
+            <HubStatCard> {
+                <View> {
+                    width: Fill, height: Fit
+                    flow: Right
+                    align: {y: 0.5}
+                    panel_status_dot = <HubStatusDot> { width: 28, height: 28, margin: {right: 14} }
+                    <View> {
+                        width: Fill, height: Fit
+                        flow: Down
+                        <Label> {
+                            text: "STATUS"
+                            draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
+                        }
+                        panel_status_text = <Label> {
+                            margin: {top: 6}
+                            draw_text: {
+                                fn get_color(self) -> vec4 { return #15242b; }
+                                text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
+                            }
+                        }
                     }
-                    text_style: <FONT_MEDIUM>{ font_size: 11.5 }
                 }
-                text: ""
             }
-            panel_chat_btn = <HubActionButton> {
-                text: "Open in Chat"
+
+            <HubStatCard> {
+                <Label> {
+                    text: "DISK SIZE"
+                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
+                }
+                panel_size_text = <Label> {
+                    margin: {top: 10}
+                    draw_text: {
+                        fn get_color(self) -> vec4 { return #101c22; }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 15.0 }
+                    }
+                }
+            }
+
+            <HubStatCard> {
+                <Label> {
+                    text: "PEAK RAM"
+                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
+                }
+                panel_mem_text = <Label> {
+                    margin: {top: 10}
+                    draw_text: {
+                        fn get_color(self) -> vec4 { return #101c22; }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 15.0 }
+                    }
+                }
+            }
+
+            <HubStatCard> {
+                margin: {right: 0}
+                <Label> {
+                    text: "QUANTIZATION"
+                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
+                }
+                <Label> {
+                    text: "4-bit\nMLX"
+                    margin: {top: 7}
+                    draw_text: {
+                        fn get_color(self) -> vec4 { return #101c22; }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 15.0 }
+                        wrap: Word
+                    }
+                }
             }
         }
 
@@ -842,7 +881,7 @@ live_design! {
                 hub_panel_header = <HubPanelHeader> {}
 
                 hub_llm_divider = <View> {
-                    width: Fill, height: 1
+                    width: Fill, height: 0
                     show_bg: true
                     draw_bg: {
                         fn pixel(self) -> vec4 { return #f1f5f9; }
@@ -852,25 +891,26 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 14, bottom: 28}
+                    padding: {left: 16, right: 16, top: 0, bottom: 28}
 
                     <HubInputLabel> { text: "SYSTEM PROMPT" }
                     llm_system = <HubPanelInput> {
-                        height: 58
+                        height: 116
                         empty_text: "You are a helpful assistant..."
                     }
 
                     <HubInputLabel> { text: "USER MESSAGE" }
                     llm_user = <HubPanelInput> {
-                        height: 48
+                        height: 170
                         empty_text: "Type your message here..."
                     }
 
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
-                        margin: {top: 8, bottom: 12}
-                        llm_generate_btn = <HubActionButton> { text: "Generate" }
+                        margin: {top: -76, bottom: 24, right: 24}
+                        <View> { width: Fill }
+                        llm_generate_btn = <HubActionButton> { text: "Generate" width: 168 }
                     }
 
                     <HubInputLabel> { text: "RESPONSE" }
