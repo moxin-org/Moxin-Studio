@@ -41,8 +41,8 @@ live_design! {
     // ========================================================================
 
     pub ChatListItem = <View> {
-        width: Fill, height: 24
-        padding: {left: 0, right: 8}
+        width: Fill, height: 30
+        padding: {left: 8, right: 8}
         margin: {right: 6, bottom: 2}
         align: {y: 0.5}
         cursor: Hand
@@ -68,7 +68,7 @@ live_design! {
             }
         }
         title = <Label> {
-            width: Fill, height: 16
+            width: Fill, height: Fit
             flow: Right
             draw_text: {
                 color: vec4(0.32, 0.40, 0.43, 1.0)

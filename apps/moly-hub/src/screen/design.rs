@@ -107,28 +107,34 @@ live_design! {
     HubModelListItem = <View> {
         width: Fill, height: Fit
         padding: {left: 0, right: 0, top: 0, bottom: 0}
-        margin: {left: 10, right: 8, bottom: 5}
+        margin: {left: 8, right: 8, bottom: 4}
         flow: Down
         cursor: Hand
         event_order: Down
         show_bg: true
         draw_bg: {
             instance selected: 0.0
+            instance hover: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
+                // Demo: rounded-xl (12px); hover:bg-surface-container-high #dfeaef;
+                // selected: bg-primary-container/10 + border border-primary/20
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
+                let hover_col = #dfeaef;
+                // primary-container #22a6b3 at 10% on surface #f1fbff ≈ #d8edf0
+                let selected_bg = #d8edf0;
                 let base = #00000000;
-                let selected = #dff3f8;
-                sdf.fill(mix(base, selected, self.selected));
-                sdf.stroke(vec4(0.45, 0.74, 0.78, self.selected), 1.0);
+                sdf.fill(mix(mix(base, hover_col, self.hover), selected_bg, self.selected));
+                // border primary at 20% alpha
+                sdf.stroke(vec4(0.0, 0.412, 0.447, self.selected * 0.35), 1.0);
                 return sdf.result;
             }
         }
         item_row = <View> {
-            width: Fill, height: 44
+            width: Fill, height: 46
             flow: Right
             align: {y: 0.5}
-            padding: {left: 16, right: 10}
+            padding: {left: 16, right: 12}
             model_status = <HubStatusDot> { width: 0, height: 0, margin: {right: 0} }
             model_name = <Label> {
                 width: Fill
@@ -138,15 +144,16 @@ live_design! {
                 draw_text: {
                     instance selected: 0.0
                     fn get_color(self) -> vec4 {
-                        return mix(#273941, #0d737c, self.selected);
+                        // Demo: text-on-surface-variant #3d494a → text-primary #006972 + font-bold when selected
+                        return mix(#3d494a, #006972, self.selected);
                     }
-                    text_style: <FONT_SEMIBOLD>{ font_size: 12.0 }
+                    text_style: <FONT_SEMIBOLD>{ font_size: 13.0 }
                     wrap: Ellipsis
                 }
             }
             downloaded_badge = <View> {
-                width: 50, height: 22
-                padding: {left: 6, right: 6, top: 0, bottom: 0}
+                width: Fit, height: 20
+                padding: {left: 8, right: 8, top: 0, bottom: 0}
                 margin: {left: 0}
                 align: {x: 0.5, y: 0.5}
                 visible: false
@@ -154,16 +161,19 @@ live_design! {
                 draw_bg: {
                     fn pixel(self) -> vec4 {
                         let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                        sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 5.0);
-                        sdf.fill(#c9f7dc);
+                        // Demo: bg-green-100 rounded-full
+                        let r = self.rect_size.y * 0.25;
+                        sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, r);
+                        sdf.fill(#dcfce7);
                         return sdf.result;
                     }
                 }
                 <Label> {
                     text: "READY"
                     draw_text: {
-                        fn get_color(self) -> vec4 { return #047857; }
-                        text_style: <FONT_SEMIBOLD>{ font_size: 8.5 }
+                        // Demo: text-green-700 #15803d, font-bold uppercase
+                        fn get_color(self) -> vec4 { return #15803d; }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 9.0 }
                     }
                 }
             }
@@ -175,19 +185,20 @@ live_design! {
 
     HubSubfolderGroupHeader = <View> {
         width: Fill, height: Fit
-        padding: {left: 24, right: 14, top: 14, bottom: 6}
+        padding: {left: 24, right: 14, top: 18, bottom: 8}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #eef8fb;
+                return #f1fbff;
             }
         }
+        // Demo: text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest
         subfolder_header_label = <Label> {
             draw_text: {
                 fn get_color(self) -> vec4 {
-                    return #7b8c93;
+                    return #3d494a99;
                 }
-                text_style: <FONT_SEMIBOLD>{ font_size: 9.0 }
+                text_style: <FONT_SEMIBOLD>{ font_size: 10.0 }
             }
         }
     }
@@ -200,13 +211,13 @@ live_design! {
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #eef8fb;
+                return #f1fbff;
             }
         }
         category_header_label = <Label> {
             draw_text: {
                 fn get_color(self) -> vec4 {
-                    return #7b8c93;
+                    return #3d494a99;
                 }
                 text_style: <FONT_SEMIBOLD>{ font_size: 10.0 }
             }
@@ -215,9 +226,11 @@ live_design! {
 
     // ── Action button ──
 
+    // Demo: rounded-full pill; primary=teal (#22a6b3, on-primary-container #00353a),
+    // purple=secondary #5240dd white text, danger=outlined error #ba1a1a transparent bg
     HubActionButton = <Button> {
-        width: Fit, height: 46
-        padding: {left: 28, right: 28}
+        width: Fit, height: 44
+        padding: {left: 24, right: 24}
         margin: {right: 12}
         animator: {
             hover = {
@@ -238,14 +251,19 @@ live_design! {
             instance purple: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(1.0, 1.0, self.rect_size.x - 2.0, self.rect_size.y - 2.0, 10.0);
-                let teal = mix(#26aab5, #1f98a2, self.hover);
-                let purple = mix(#5b3de0, #4c30cf, self.hover);
+                let r = self.rect_size.y * 0.25;
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, r);
+                // Demo: primary-container teal
+                let teal = mix(#22a6b3, #2bb6c4, self.hover);
+                // Demo: secondary #5240dd
+                let purple = mix(#5240dd, #6253e8, self.hover);
                 let primary = mix(teal, purple, self.purple);
-                let danger_fill = #eef8fb;
+                // Danger (Remove): transparent fill with 5% error tint on hover
+                let danger_fill = mix(#00000000, #ba1a1a0d, self.hover);
                 let color = mix(primary, danger_fill, self.danger);
-                sdf.fill(mix(color, color * 0.96, self.pressed));
-                sdf.stroke(vec4(0.72, 0.11, 0.11, self.danger), 1.0);
+                sdf.fill(mix(color, color * 0.95, self.pressed));
+                // Border for danger only
+                sdf.stroke(vec4(0.729, 0.102, 0.102, self.danger), 1.4);
                 return sdf.result;
             }
         }
@@ -341,27 +359,268 @@ live_design! {
         }
     }
 
-    HubPanelOutput = <View> {
-        width: Fill, height: 160
-        padding: {left: 24, right: 24, top: 24, bottom: 24}
-        margin: {top: 0, bottom: 12}
+    // ── Generate button with sparkle icon + text (demo: bg-primary-container + on-primary-container, rounded-xl) ──
+    HubGenerateButton = <View> {
+        width: Fit, height: 44
+        padding: {left: 20, right: 24, top: 0, bottom: 0}
+        flow: Right
+        align: {x: 0.5, y: 0.5}
+        spacing: 8
+        cursor: Hand
+        show_bg: true
+
+        animator: {
+            hover = {
+                default: off
+                off = { from: {all: Forward {duration: 0.1}} apply: { draw_bg: {hover: 0.0} } }
+                on  = { from: {all: Forward {duration: 0.1}} apply: { draw_bg: {hover: 1.0} } }
+            }
+        }
+
+        draw_bg: {
+            instance hover: 0.0
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
+                sdf.fill(mix(#22a6b3, #2bb6c4, self.hover));
+                return sdf.result;
+            }
+        }
+
+        generate_icon = <View> {
+            width: 18, height: 18
+            show_bg: true
+            draw_bg: {
+                fn pixel(self) -> vec4 {
+                    let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                    let cx = 9.0;
+                    let cy = 9.0;
+                    // 4-pointed sparkle, on-primary-container color #00353a
+                    sdf.move_to(cx, cy - 7.0);
+                    sdf.line_to(cx + 1.6, cy - 1.6);
+                    sdf.line_to(cx + 7.0, cy);
+                    sdf.line_to(cx + 1.6, cy + 1.6);
+                    sdf.line_to(cx, cy + 7.0);
+                    sdf.line_to(cx - 1.6, cy + 1.6);
+                    sdf.line_to(cx - 7.0, cy);
+                    sdf.line_to(cx - 1.6, cy - 1.6);
+                    sdf.close_path();
+                    sdf.fill(#00353a);
+                    return sdf.result;
+                }
+            }
+        }
+        generate_label = <Label> {
+            text: "Generate"
+            draw_text: {
+                color: #00353a
+                text_style: <FONT_BOLD>{ font_size: 13.5 }
+            }
+        }
+    }
+
+    // ── Card header icon (used inside SYSTEM PROMPT / USER MESSAGE cards) ──
+    // kind: 0 = shield (admin_panel_settings), 1 = person, 2 = sparkle
+    HubCardHeaderIcon = <View> {
+        width: 22, height: 22
+        show_bg: true
+        draw_bg: {
+            instance kind: 0.0
+            instance fg_col: vec4(0.0, 0.412, 0.447, 1.0)
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                let cx = 11.0;
+                let cy = 11.0;
+                // Shield: top arc + side bevels meeting at bottom point
+                if self.kind < 0.5 {
+                    sdf.move_to(cx - 6.0, cy - 5.0);
+                    sdf.line_to(cx, cy - 8.0);
+                    sdf.line_to(cx + 6.0, cy - 5.0);
+                    sdf.line_to(cx + 6.0, cy + 1.0);
+                    sdf.line_to(cx, cy + 8.5);
+                    sdf.line_to(cx - 6.0, cy + 1.0);
+                    sdf.close_path();
+                    sdf.stroke(self.fg_col, 1.6);
+                    // Inner tick
+                    sdf.move_to(cx - 2.5, cy);
+                    sdf.line_to(cx - 0.5, cy + 2.0);
+                    sdf.line_to(cx + 3.0, cy - 2.0);
+                    sdf.stroke(self.fg_col, 1.6);
+                }
+                // Person: head circle + shoulders arc
+                if self.kind > 0.5 && self.kind < 1.5 {
+                    sdf.circle(cx, cy - 3.0, 3.2);
+                    sdf.stroke(self.fg_col, 1.6);
+                    // Shoulders (rounded bottom)
+                    sdf.box(cx - 6.0, cy + 1.5, 12.0, 8.0, 4.0);
+                    sdf.stroke(self.fg_col, 1.6);
+                }
+                // Sparkle (auto_awesome): 4-pointed star
+                if self.kind > 1.5 {
+                    // Diamond/star: vertical+horizontal+two diagonal lines from center
+                    sdf.move_to(cx, cy - 7.0);
+                    sdf.line_to(cx + 2.0, cy - 2.0);
+                    sdf.line_to(cx + 7.0, cy);
+                    sdf.line_to(cx + 2.0, cy + 2.0);
+                    sdf.line_to(cx, cy + 7.0);
+                    sdf.line_to(cx - 2.0, cy + 2.0);
+                    sdf.line_to(cx - 7.0, cy);
+                    sdf.line_to(cx - 2.0, cy - 2.0);
+                    sdf.close_path();
+                    sdf.fill(self.fg_col);
+                }
+                return sdf.result;
+            }
+        }
+    }
+
+    // ── Labeled card (SYSTEM PROMPT / USER MESSAGE wrapper) ──
+    // Demo: bg-surface border outline-variant rounded-2xl, header (icon + uppercase label)
+    // + divider + body. `overflow-hidden custom-shadow` approximated with single rounded outline.
+    HubLabeledCard = <View> {
+        width: Fill, height: Fit
+        flow: Down
+        margin: {bottom: 16}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 12.0);
-                sdf.fill(#f8fdff);
-                sdf.stroke(#b8cbd2, 1.2);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
+                sdf.fill(#f1fbff);
+                sdf.stroke(#bcc9ca, 1.0);
                 return sdf.result;
             }
         }
+
+        card_header = <View> {
+            width: Fill, height: Fit
+            flow: Right
+            align: {y: 0.5}
+            padding: {left: 22, right: 22, top: 14, bottom: 14}
+            spacing: 10
+            header_icon = <HubCardHeaderIcon> {}
+            header_label = <Label> {
+                draw_text: {
+                    color: #131d21
+                    text_style: <FONT_BOLD>{ font_size: 11.0 }
+                }
+            }
+        }
+
+        card_divider = <View> {
+            width: Fill, height: 1
+            show_bg: true
+            draw_bg: { color: #bcc9ca4d }
+        }
+
+        card_body = <View> {
+            width: Fill, height: Fit
+            padding: {left: 22, right: 22, top: 18, bottom: 18}
+            flow: Down
+        }
+    }
+
+    // ── Transparent input used inside a labeled card body ──
+    HubCardInput = <TextInput> {
+        width: Fill, height: 64
+        padding: {left: 0, right: 0, top: 0, bottom: 0}
+        label_align: {x: 0.0, y: 0.0}
+        draw_bg: {
+            fn pixel(self) -> vec4 { return #00000000; }
+        }
+        draw_text: {
+            fn get_color(self) -> vec4 { return #131d21; }
+            color: #131d21
+            color_empty: #3d494a66
+            text_style: { font_size: 13.5 }
+        }
+        draw_cursor: {
+            uniform border_radius: 0.5
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius);
+                sdf.fill(mix(#00000000, #131d21, (1.0 - self.blink) * self.focus));
+                return sdf.result;
+            }
+        }
+    }
+
+    // Demo: bg-surface-container-highest/30 + dashed outline-variant border + rounded-2xl, min-h 160
+    HubPanelOutput = <View> {
+        width: Fill, height: Fit
+        padding: {left: 28, right: 28, top: 28, bottom: 28}
+        margin: {top: 0, bottom: 12}
+        flow: Overlay
+        show_bg: true
+        draw_bg: {
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
+                // Fill: surface-container-highest at ~30% on surface-container-low → ~#e2eef2
+                sdf.fill(#e7eff1);
+                // Dashed border simulated by stroking with antialiased dash pattern
+                let half_p = self.rect_size * 0.5;
+                let pos = self.pos * self.rect_size;
+                let edge = abs(pos - half_p) - (half_p - 1.5);
+                let edge_d = max(edge.x, edge.y);
+                let on_edge = 1.0 - smoothstep(0.0, 1.0, abs(edge_d));
+                // 8px dash, 6px gap pattern along the perimeter (use x+y as crude param)
+                let t = (pos.x + pos.y) * (1.0 / 14.0);
+                let dash = step(0.5, fract(t));
+                let dash_col = vec4(0.737, 0.788, 0.792, on_edge * dash);
+                return mix(vec4(0.906, 0.937, 0.945, 1.0), dash_col, dash_col.w);
+            }
+        }
+
+        // Placeholder shown when no output yet
+        output_placeholder = <View> {
+            width: Fill, height: Fit
+            flow: Down
+            align: {x: 0.5}
+            spacing: 10
+            visible: true
+
+            <View> {
+                width: 44, height: 44
+                show_bg: true
+                draw_bg: {
+                    fn pixel(self) -> vec4 {
+                        let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                        let cx = 22.0;
+                        let cy = 22.0;
+                        // Faint 4-point sparkle (on-surface-variant/30 ≈ #3d494a4d)
+                        sdf.move_to(cx, cy - 16.0);
+                        sdf.line_to(cx + 3.8, cy - 3.8);
+                        sdf.line_to(cx + 16.0, cy);
+                        sdf.line_to(cx + 3.8, cy + 3.8);
+                        sdf.line_to(cx, cy + 16.0);
+                        sdf.line_to(cx - 3.8, cy + 3.8);
+                        sdf.line_to(cx - 16.0, cy);
+                        sdf.line_to(cx - 3.8, cy - 3.8);
+                        sdf.close_path();
+                        sdf.fill(#3d494a4d);
+                        return sdf.result;
+                    }
+                }
+            }
+            <Label> {
+                text: "Output will appear here after generation..."
+                draw_text: {
+                    color: #3d494a80
+                    text_style: { font_size: 13.0 }
+                }
+            }
+        }
+
+        // Actual output text, hidden until output arrives
         output_label = <Label> {
             width: Fill
+            visible: false
             draw_text: {
                 fn get_color(self) -> vec4 {
-                    return #1f2937;
+                    return #131d21;
                 }
-                text_style: { font_size: 13.0 }
+                text_style: { font_size: 13.5 }
                 wrap: Word
             }
         }
@@ -379,20 +638,115 @@ live_design! {
         }
     }
 
+    // Demo: bg-surface border border-outline-variant p-4 rounded-xl flex items-center gap-4
     HubStatCard = <View> {
-        width: Fill, height: 96
-        padding: {left: 16, right: 16, top: 14, bottom: 12}
+        width: Fill, height: Fit
+        padding: {left: 16, right: 16, top: 14, bottom: 14}
         margin: {right: 16}
-        flow: Down
+        flow: Right
+        align: {y: 0.5}
+        spacing: 14
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 11.0);
-                sdf.fill(#f8fdff);
-                sdf.stroke(#b8cbd2, 1.2);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
+                sdf.fill(#f1fbff);
+                sdf.stroke(#bcc9ca, 1.0);
                 return sdf.result;
             }
+        }
+    }
+
+    // 40×40 rounded-full icon container. `kind` selects shape; bg/fg colors fixed per instance.
+    HubStatCardIcon = <View> {
+        width: 40, height: 40
+        show_bg: true
+        draw_bg: {
+            // 0=check, 1=disk, 2=cpu, 3=gauge
+            instance kind: 0.0
+            instance status: 0.0   // kept for compatibility with apply_over status updates (no-op)
+            instance bg_col: vec4(0.86, 0.99, 0.91, 1.0)   // bg-green-100
+            instance fg_col: vec4(0.086, 0.639, 0.290, 1.0) // text-green-600
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                let cx = 20.0;
+                let cy = 20.0;
+                // Background circle
+                sdf.circle(cx, cy, 19.5);
+                sdf.fill(self.bg_col);
+
+                // Symbol: checkmark for kind ~ 0
+                if self.kind < 0.5 {
+                    sdf.move_to(cx - 6.0, cy + 0.5);
+                    sdf.line_to(cx - 1.5, cy + 5.0);
+                    sdf.line_to(cx + 6.5, cy - 4.0);
+                    sdf.stroke(self.fg_col, 2.2);
+                }
+                // Disk: stacked ellipses (database cylinder)
+                if self.kind > 0.5 && self.kind < 1.5 {
+                    // Top oval
+                    sdf.box(cx - 7.0, cy - 7.5, 14.0, 4.0, 2.0);
+                    sdf.fill(self.fg_col);
+                    // Side body
+                    sdf.box(cx - 7.0, cy - 5.5, 14.0, 9.0, 0.0);
+                    sdf.fill(self.fg_col);
+                    // Inner cutout band
+                    sdf.box(cx - 5.0, cy - 1.0, 10.0, 1.4, 0.4);
+                    sdf.fill(self.bg_col);
+                    // Bottom rounded
+                    sdf.box(cx - 7.0, cy + 3.0, 14.0, 4.0, 2.0);
+                    sdf.fill(self.fg_col);
+                }
+                // CPU chip: square with corner pins
+                if self.kind > 1.5 && self.kind < 2.5 {
+                    // Outer chip
+                    sdf.box(cx - 6.5, cy - 6.5, 13.0, 13.0, 2.0);
+                    sdf.fill(self.fg_col);
+                    // Inner cutout
+                    sdf.box(cx - 4.0, cy - 4.0, 8.0, 8.0, 1.0);
+                    sdf.fill(self.bg_col);
+                    // Pins (top/bottom/left/right small bars)
+                    sdf.box(cx - 4.5, cy - 9.5, 1.5, 3.0, 0.4);  sdf.fill(self.fg_col);
+                    sdf.box(cx - 0.75, cy - 9.5, 1.5, 3.0, 0.4); sdf.fill(self.fg_col);
+                    sdf.box(cx + 3.0, cy - 9.5, 1.5, 3.0, 0.4);  sdf.fill(self.fg_col);
+                    sdf.box(cx - 4.5, cy + 6.5, 1.5, 3.0, 0.4);  sdf.fill(self.fg_col);
+                    sdf.box(cx - 0.75, cy + 6.5, 1.5, 3.0, 0.4); sdf.fill(self.fg_col);
+                    sdf.box(cx + 3.0, cy + 6.5, 1.5, 3.0, 0.4);  sdf.fill(self.fg_col);
+                }
+                // Gauge: arc with needle
+                if self.kind > 2.5 {
+                    // Outer ring stroke as arc by overdrawing semicircle and clipping
+                    sdf.circle(cx, cy + 1.0, 7.5);
+                    sdf.stroke(self.fg_col, 1.6);
+                    // Needle pointing upper-right
+                    sdf.move_to(cx, cy + 1.0);
+                    sdf.line_to(cx + 4.5, cy - 4.0);
+                    sdf.stroke(self.fg_col, 1.6);
+                    // Hub
+                    sdf.circle(cx, cy + 1.0, 1.4);
+                    sdf.fill(self.fg_col);
+                }
+
+                return sdf.result;
+            }
+        }
+    }
+
+    HubStatCardLabel = <Label> {
+        // Demo: font-label-sm text-on-surface-variant/60 uppercase text-[10px]
+        draw_text: {
+            color: #3d494a99
+            text_style: <FONT_SEMIBOLD>{ font_size: 9.5 }
+        }
+    }
+
+    HubStatCardValue = <Label> {
+        margin: {top: 4}
+        // Demo: font-bold text-on-surface
+        draw_text: {
+            color: #131d21
+            text_style: <FONT_BOLD>{ font_size: 14.0 }
         }
     }
 
@@ -410,18 +764,20 @@ live_design! {
             <View> {
                 width: Fill, height: Fit
                 flow: Down
+                // Demo: text-display-xl font-black text-on-surface
                 panel_model_name = <Label> {
                     draw_text: {
-                        fn get_color(self) -> vec4 { return #101c22; }
-                        text_style: <FONT_SEMIBOLD>{ font_size: 22.5 }
+                        fn get_color(self) -> vec4 { return #131d21; }
+                        text_style: <FONT_BOLD>{ font_size: 24.0 }
                     }
                 }
 
+                // Demo: text-on-surface-variant/80 font-body-md max-w-lg
                 panel_model_desc = <Label> {
                     width: Fill, height: Fit
-                    margin: {top: 10}
+                    margin: {top: 8}
                     draw_text: {
-                        fn get_color(self) -> vec4 { return #5f6f76; }
+                        fn get_color(self) -> vec4 { return #3d494acc; }
                         text_style: { font_size: 14.0 }
                         wrap: Word
                     }
@@ -488,72 +844,72 @@ live_design! {
             flow: Right
             margin: {bottom: 16}
 
+            // STATUS — green check
             <HubStatCard> {
+                panel_status_dot = <HubStatCardIcon> {
+                    draw_bg: {
+                        kind: 0.0
+                        bg_col: vec4(0.863, 0.988, 0.906, 1.0)
+                        fg_col: vec4(0.086, 0.639, 0.290, 1.0)
+                    }
+                }
                 <View> {
                     width: Fill, height: Fit
-                    flow: Right
-                    align: {y: 0.5}
-                    panel_status_dot = <HubStatusDot> { width: 28, height: 28, margin: {right: 14} }
-                    <View> {
-                        width: Fill, height: Fit
-                        flow: Down
-                        <Label> {
-                            text: "STATUS"
-                            draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
-                        }
-                        panel_status_text = <Label> {
-                            margin: {top: 6}
-                            draw_text: {
-                                fn get_color(self) -> vec4 { return #15242b; }
-                                text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
-                            }
-                        }
-                    }
+                    flow: Down
+                    <HubStatCardLabel> { text: "STATUS" }
+                    panel_status_text = <HubStatCardValue> {}
                 }
             }
 
+            // DISK SIZE — primary teal disk
             <HubStatCard> {
-                <Label> {
-                    text: "DISK SIZE"
-                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
-                }
-                panel_size_text = <Label> {
-                    margin: {top: 10}
-                    draw_text: {
-                        fn get_color(self) -> vec4 { return #101c22; }
-                        text_style: <FONT_SEMIBOLD>{ font_size: 15.0 }
+                <HubStatCardIcon> {
+                    draw_bg: {
+                        kind: 1.0
+                        bg_col: vec4(0.886, 0.957, 0.969, 1.0)
+                        fg_col: vec4(0.0, 0.412, 0.447, 1.0)
                     }
+                }
+                <View> {
+                    width: Fill, height: Fit
+                    flow: Down
+                    <HubStatCardLabel> { text: "DISK SIZE" }
+                    panel_size_text = <HubStatCardValue> {}
                 }
             }
 
+            // PEAK RAM — secondary purple chip
             <HubStatCard> {
-                <Label> {
-                    text: "PEAK RAM"
-                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
-                }
-                panel_mem_text = <Label> {
-                    margin: {top: 10}
-                    draw_text: {
-                        fn get_color(self) -> vec4 { return #101c22; }
-                        text_style: <FONT_SEMIBOLD>{ font_size: 15.0 }
+                <HubStatCardIcon> {
+                    draw_bg: {
+                        kind: 2.0
+                        bg_col: vec4(0.929, 0.918, 1.0, 1.0)
+                        fg_col: vec4(0.322, 0.251, 0.867, 1.0)
                     }
+                }
+                <View> {
+                    width: Fill, height: Fit
+                    flow: Down
+                    <HubStatCardLabel> { text: "PEAK RAM" }
+                    panel_mem_text = <HubStatCardValue> {}
                 }
             }
 
+            // QUANTIZATION — neutral gauge
             <HubStatCard> {
                 margin: {right: 0}
-                <Label> {
-                    text: "QUANTIZATION"
-                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 8.5 } }
-                }
-                <Label> {
-                    text: "4-bit\nMLX"
-                    margin: {top: 7}
-                    draw_text: {
-                        fn get_color(self) -> vec4 { return #101c22; }
-                        text_style: <FONT_SEMIBOLD>{ font_size: 15.0 }
-                        wrap: Word
+                <HubStatCardIcon> {
+                    draw_bg: {
+                        kind: 3.0
+                        bg_col: vec4(0.851, 0.894, 0.914, 1.0)
+                        fg_col: vec4(0.239, 0.286, 0.290, 1.0)
                     }
+                }
+                <View> {
+                    width: Fill, height: Fit
+                    flow: Down
+                    <HubStatCardLabel> { text: "QUANTIZATION" }
+                    <HubStatCardValue> { text: "4-bit MLX" }
                 }
             }
         }
@@ -756,7 +1112,7 @@ live_design! {
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #eef8fb;
+                return #f1fbff;
             }
         }
 
@@ -766,7 +1122,7 @@ live_design! {
             flow: Down
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #eef8fb; }
+                fn pixel(self) -> vec4 { return #f1fbff; }
             }
 
             // Header
@@ -807,8 +1163,9 @@ live_design! {
                     draw_bg: {
                         fn pixel(self) -> vec4 {
                             let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 9.0);
-                            sdf.fill(#e4f1f6);
+                            // Demo: bg-surface-container-low rounded-xl (12px corners → r=6)
+                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 6.0);
+                            sdf.fill(#eaf5fa);
                             return sdf.result;
                         }
                     }
@@ -866,7 +1223,7 @@ live_design! {
             show_bg: true
             draw_bg: {
                 fn pixel(self) -> vec4 {
-                    return #c7d7dd;
+                    return #bcc9ca;
                 }
             }
         }
@@ -877,7 +1234,7 @@ live_design! {
             flow: Overlay
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #eef8fb; }
+                fn pixel(self) -> vec4 { return #eaf5fa; }
             }
 
             // Empty state (default)
@@ -915,29 +1272,61 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 16, right: 16, top: 0, bottom: 28}
+                    padding: {left: 16, right: 16, top: 8, bottom: 28}
 
-                    <HubInputLabel> { text: "SYSTEM PROMPT" }
-                    llm_system = <HubPanelInput> {
-                        height: 116
-                        empty_text: "You are a helpful assistant..."
+                    // ── SYSTEM PROMPT card ──
+                    llm_system_card = <HubLabeledCard> {
+                        card_header = {
+                            header_icon = { draw_bg: {
+                                kind: 0.0
+                                fg_col: vec4(0.0, 0.412, 0.447, 1.0)  // primary
+                            } }
+                            header_label = { text: "SYSTEM PROMPT" }
+                        }
+                        card_body = {
+                            llm_system = <HubCardInput> {
+                                height: 80
+                                empty_text: "You are a helpful assistant..."
+                            }
+                        }
                     }
 
-                    <HubInputLabel> { text: "USER MESSAGE" }
-                    llm_user = <HubPanelInput> {
-                        height: 170
-                        empty_text: "Type your message here..."
+                    // ── USER MESSAGE card with inset Generate button ──
+                    llm_user_card = <HubLabeledCard> {
+                        card_header = {
+                            header_icon = { draw_bg: {
+                                kind: 1.0
+                                fg_col: vec4(0.322, 0.251, 0.867, 1.0)  // secondary
+                            } }
+                            header_label = { text: "USER MESSAGE" }
+                        }
+                        card_body = {
+                            llm_user = <HubCardInput> {
+                                height: 120
+                                empty_text: "Type your message here..."
+                            }
+
+                            // Generate button row inside the card body, aligned right
+                            <View> {
+                                width: Fill, height: Fit
+                                flow: Right
+                                align: {y: 0.5}
+                                margin: {top: 10}
+                                <View> { width: Fill }
+                                llm_generate_btn = <HubGenerateButton> {}
+                            }
+                        }
                     }
 
-                    <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        margin: {top: -76, bottom: 24, right: 24}
-                        <View> { width: Fill }
-                        llm_generate_btn = <HubActionButton> { text: "Generate" width: 168 }
+                    // ── RESPONSE section (label above + dashed-border placeholder box) ──
+                    <Label> {
+                        margin: {top: 12, bottom: 10, left: 6}
+                        text: "RESPONSE"
+                        draw_text: {
+                            color: #3d494a
+                            text_style: <FONT_BOLD>{ font_size: 11.0 }
+                        }
                     }
-
-                    <HubInputLabel> { text: "RESPONSE" }
                     llm_response = <HubPanelOutput> {}
                     llm_status = <HubPanelStatus> {}
                 }

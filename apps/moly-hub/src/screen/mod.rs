@@ -554,13 +554,13 @@ impl ModelHubApp {
             match self.flat_list.get(item_id).copied() {
                 Some(ListRow::Header(cat)) => {
                     let item = list.item(cx, item_id, live_id!(HubCategoryHeader));
-                    item.label(ids!(category_header_label)).set_text(cx, cat.label());
+                    item.label(ids!(category_header_label)).set_text(cx, &cat.label().to_uppercase());
                     item.draw_all(cx, scope);
                 }
                 Some(ListRow::SubHeader(idx)) => {
                     let name = self.subfolder_names.get(idx).map(|s| s.as_str()).unwrap_or("");
                     let item = list.item(cx, item_id, live_id!(HubSubfolderHeader));
-                    item.label(ids!(subfolder_header_label)).set_text(cx, name);
+                    item.label(ids!(subfolder_header_label)).set_text(cx, &name.to_uppercase());
                     item.draw_all(cx, scope);
                 }
                 Some(ListRow::Model(gi)) => {
@@ -1325,8 +1325,8 @@ impl ModelHubApp {
     }
 
     fn handle_input_changes(&mut self, actions: &Actions) {
-        if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_system)).changed(actions)       { self.llm_state.system = t.to_string(); }
-        if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_user)).changed(actions)         { self.llm_state.user = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_system_card.card_body.llm_system)).changed(actions)       { self.llm_state.system = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_user_card.card_body.llm_user)).changed(actions)         { self.llm_state.user = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_vlm_panel.vlm_image_path)).changed(actions)   { self.vlm_state.image_path = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_vlm_panel.vlm_user)).changed(actions)         { self.vlm_state.user = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_asr_panel.asr_audio_path)).changed(actions)   { self.asr_state.audio_path = t.to_string(); }
@@ -1339,7 +1339,7 @@ impl ModelHubApp {
     }
 
     fn handle_llm_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        if self.view.button(ids!(hub_llm_panel.llm_generate_btn)).clicked(actions) {
+        if self.view.view(ids!(hub_llm_panel.llm_user_card.card_body.llm_generate_btn)).finger_down(actions).is_some() {
             if let Some(sel) = self.selected_id.clone() {
                 let system = self.llm_state.system.clone();
                 let user   = self.llm_state.user.clone();
@@ -2121,6 +2121,8 @@ impl ModelHubApp {
         self.llm_state.is_running = true;
         self.view.label(ids!(hub_llm_panel.llm_status)).set_text(cx, "Generating...");
         self.view.label(ids!(hub_llm_panel.llm_response.output_label)).set_text(cx, "");
+        self.view.label(ids!(hub_llm_panel.llm_response.output_label)).set_visible(cx, false);
+        self.view.view(ids!(hub_llm_panel.llm_response.output_placeholder)).set_visible(cx, true);
         self.view.redraw(cx);
 
         let (tx, rx) = mpsc::channel();
@@ -2152,6 +2154,8 @@ impl ModelHubApp {
         self.vlm_state.is_running = true;
         self.view.label(ids!(hub_vlm_panel.vlm_status)).set_text(cx, "Generating...");
         self.view.label(ids!(hub_vlm_panel.vlm_response.output_label)).set_text(cx, "");
+        self.view.label(ids!(hub_vlm_panel.vlm_response.output_label)).set_visible(cx, false);
+        self.view.view(ids!(hub_vlm_panel.vlm_response.output_placeholder)).set_visible(cx, true);
         self.view.redraw(cx);
 
         let (tx, rx) = mpsc::channel();
@@ -2194,6 +2198,8 @@ impl ModelHubApp {
         let status_msg = if is_wav { "Transcribing..." } else { "Converting + transcribing..." };
         self.view.label(ids!(hub_asr_panel.asr_status)).set_text(cx, status_msg);
         self.view.label(ids!(hub_asr_panel.asr_transcript.output_label)).set_text(cx, "");
+        self.view.label(ids!(hub_asr_panel.asr_transcript.output_label)).set_visible(cx, false);
+        self.view.view(ids!(hub_asr_panel.asr_transcript.output_placeholder)).set_visible(cx, true);
         self.view.redraw(cx);
 
         let (tx, rx) = mpsc::channel();
@@ -2653,12 +2659,14 @@ impl ModelHubApp {
         let mut redraw = false;
 
         macro_rules! poll_string_rx {
-            ($state:expr, $label:expr, $status:expr) => {
+            ($state:expr, $label:expr, $status:expr, $placeholder:expr) => {
                 if $state.is_running {
                     if let Some(rx) = &$state.rx {
                         if let Ok(result) = rx.try_recv() {
                             match result {
                                 Ok(t)  => { self.view.label($label).set_text(cx, &t);
+                                            self.view.label($label).set_visible(cx, true);
+                                            self.view.view($placeholder).set_visible(cx, false);
                                             self.view.label($status).set_text(cx, "Done."); }
                                 Err(e) => { self.view.label($status).set_text(cx, &format!("Error: {}", e)); }
                             }
@@ -2673,13 +2681,16 @@ impl ModelHubApp {
 
         poll_string_rx!(self.llm_state,
             ids!(hub_llm_panel.llm_response.output_label),
-            ids!(hub_llm_panel.llm_status));
+            ids!(hub_llm_panel.llm_status),
+            ids!(hub_llm_panel.llm_response.output_placeholder));
         poll_string_rx!(self.vlm_state,
             ids!(hub_vlm_panel.vlm_response.output_label),
-            ids!(hub_vlm_panel.vlm_status));
+            ids!(hub_vlm_panel.vlm_status),
+            ids!(hub_vlm_panel.vlm_response.output_placeholder));
         poll_string_rx!(self.asr_state,
             ids!(hub_asr_panel.asr_transcript.output_label),
-            ids!(hub_asr_panel.asr_status));
+            ids!(hub_asr_panel.asr_status),
+            ids!(hub_asr_panel.asr_transcript.output_placeholder));
         // Image gen: custom poll so we can show preview + result row
         if self.image_state.is_running {
             if let Some(rx) = &self.image_state.rx {

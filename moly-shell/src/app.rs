@@ -132,13 +132,14 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 let normal = #00000000;
-                let hover = #ddecef;
-                let selected_bg = #d8e7eb;
+                let hover = #dfeaef;
+                let selected_bg = #d9e4e9;
                 let color = mix(mix(normal, hover, self.hover), selected_bg, self.selected);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 4.0);
                 sdf.fill(color);
-                sdf.box(self.rect_size.x - 3.0, 0.0, 3.0, self.rect_size.y, 0.0);
-                sdf.fill(vec4(0.04, 0.47, 0.51, self.selected));
+                // Primary-colored vertical accent bar on the RIGHT edge (per demo spec)
+                sdf.box(self.rect_size.x - 4.0, 0.0, 4.0, self.rect_size.y, 0.0);
+                sdf.fill(vec4(0.0, 0.412, 0.447, self.selected));
                 return sdf.result;
             }
         }
@@ -157,8 +158,14 @@ live_design! {
         }
         sidebar_label = <Label> {
             draw_text: {
+                instance selected: 0.0
+                fn get_color(self) -> vec4 {
+                    // Demo: text-on-surface-variant #3d494a → text-primary #006972 when selected
+                    let normal = #3d494a;
+                    let selected_c = #006972;
+                    return mix(normal, selected_c, self.selected);
+                }
                 text_style: <FONT_MEDIUM>{ font_size: 13.0 }
-                color: #33444b
             }
         }
     }
@@ -203,15 +210,17 @@ live_design! {
             instance pressed: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                let base = #16a39c;
-                let hover_color = #128c86;
-                let pressed_color = #0f7a75;
+                // Demo: bg-primary-container #22a6b3, hover:brightness-110, rounded-full
+                let base = #22a6b3;
+                let hover_color = #2bb6c4;
+                let pressed_color = #1d96a2;
                 let color = mix(
                     mix(base, hover_color, self.hover),
                     pressed_color,
                     self.pressed
                 );
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 10.0);
+                let r = self.rect_size.y * 0.25;
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, r);
                 sdf.fill(color);
                 return sdf.result;
             }
@@ -221,14 +230,14 @@ live_design! {
             icon_walk: {width: 18, height: 18, margin: {right: 10}}
             draw_icon: {
                 svg_file: (ICON_NEW_CHAT)
-                color: #ffffff
+                color: #00353a
             }
         }
         new_chat_label = <Label> {
             text: "New Session"
             draw_text: {
                 text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
-                color: #ffffff
+                color: #00353a
             }
         }
     }
@@ -455,57 +464,34 @@ live_design! {
 
                 // Header
                 header = <View> {
-                    width: Fill, height: 64
+                    width: Fill, height: 72
                     flow: Right
                     align: {y: 0.5}
-                    padding: {left: 16, right: 16}
+                    padding: {left: 20, right: 20, top: 16}
                     show_bg: true
                     draw_bg: {
-                        fn pixel(self) -> vec4 {
-                            let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 0.0);
-                            sdf.fill(#eef8fb);
-                            sdf.box(0.0, self.rect_size.y - 1.0, self.rect_size.x, 1.0, 0.0);
-                            sdf.fill(#c6d5da);
-                            return sdf.result;
-                        }
+                        color: #f1fbff
                     }
 
+                    // Hamburger menu button
                     hamburger_btn = <View> {
-                        width: 32, height: 32
-                        margin: {right: 10}
+                        width: 40, height: Fit
+                        margin: {right: 12}
                         align: {x: 0.5, y: 0.5}
                         cursor: Hand
                         event_order: Down
-                        show_bg: true
-                        draw_bg: {
-                            fn pixel(self) -> vec4 {
-                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 5.0);
-                                sdf.fill(#0d7b82);
-                                return sdf.result;
-                            }
-                        }
+                        show_bg: false
 
-                        hamburger_icon = <Icon> {
-                            icon_walk: {width: 18, height: 18}
-                            draw_icon: {
-                                svg_file: (ICON_APP)
-                                color: #ffffff
-                            }
+                        hamburger_icon = <Image> {
+                            source: (ICON_HAMBURGER)
+                            width: 20, height: 20
+                            fit: Smallest
                         }
                     }
 
-                    logo_light = <View> {
-                        width: Fit, height: 40
-                        align: {y: 0.5}
-                        <Label> {
-                            text: "Studio"
-                            draw_text: {
-                                color: #111c22
-                                text_style: <FONT_SEMIBOLD>{ font_size: 22.0 }
-                            }
-                        }
+                    logo_light = <Image> {
+                        source: (IMG_LOGO)
+                        width: 180, height: 43
                     }
 
                     title_label = <Label> {
@@ -516,8 +502,9 @@ live_design! {
                     <View> { width: Fill } // Left spacer
 
                     // ── Model Selector pill (center of header, like LM Studio) ──
+                    // Demo: bg-surface-container rounded-full px-4 py-1.5 border border-outline-variant/30
                     model_selector_btn = <View> {
-                        width: Fit, height: 36
+                        width: Fit, height: 32
                         cursor: Hand
                         align: {x: 0.5, y: 0.5}
                         padding: {left: 16, right: 12, top: 0, bottom: 0}
@@ -527,8 +514,12 @@ live_design! {
                             instance hover: 0.0
                             fn pixel(self) -> vec4 {
                                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                sdf.box(1.0, 1.0, self.rect_size.x - 2.0, self.rect_size.y - 2.0, 8.0);
-                                sdf.fill(mix(#f3f4f6, #e5e7eb, self.hover));
+                                let r = self.rect_size.y * 0.25;
+                                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, r);
+                                let base = #e4f0f4;
+                                let hover_col = #dfeaef;
+                                sdf.fill(mix(base, hover_col, self.hover));
+                                sdf.stroke(#bcc9ca80, 1.0);
                                 return sdf.result;
                             }
                         }
@@ -662,54 +653,76 @@ live_design! {
 
                     <View> { width: Fill } // Right spacer
 
-                    // ── RAM usage ring gauge ────────────────────────────
-                    ram_gauge = <View> {
-                        width: 26, height: 26
-                        margin: {right: 4}
-                        show_bg: true
-                        draw_bg: {
-                            instance usage: 0.0
-                            fn pixel(self) -> vec4 {
-                                let center = self.rect_size * 0.5;
-                                let uv = self.pos * self.rect_size - center;
-                                let dist = length(uv);
-                                let outer_r = center.x - 1.5;
-                                let inner_r = outer_r - 3.0;
+                    // ── RAM usage ring gauge + label (demo: bg-surface ring + primary fill) ──
+                    ram_gauge_group = <View> {
+                        width: Fit, height: Fit
+                        flow: Right
+                        align: {y: 0.5}
+                        padding: {right: 14}
+                        spacing: 8
 
-                                // Ring mask with anti-aliasing
-                                let ring = smoothstep(inner_r - 0.5, inner_r + 0.5, dist)
-                                         * (1.0 - smoothstep(outer_r - 0.5, outer_r + 0.5, dist));
+                        ram_gauge = <View> {
+                            width: 30, height: 30
+                            show_bg: true
+                            draw_bg: {
+                                instance usage: 0.0
+                                fn pixel(self) -> vec4 {
+                                    let center = self.rect_size * 0.5;
+                                    let uv = self.pos * self.rect_size - center;
+                                    let dist = length(uv);
+                                    let outer_r = center.x - 1.5;
+                                    let inner_r = outer_r - 3.0;
 
-                                // Angle from top, clockwise, normalized 0..1
-                                let angle = atan(uv.x, -uv.y);
-                                let a = angle / (2.0 * 3.14159);
-                                let norm = a + (1.0 - step(0.0, a));
+                                    let ring = smoothstep(inner_r - 0.5, inner_r + 0.5, dist)
+                                             * (1.0 - smoothstep(outer_r - 0.5, outer_r + 0.5, dist));
 
-                                let filled = 1.0 - step(self.usage, norm);
+                                    let angle = atan(uv.x, -uv.y);
+                                    let a = angle / (2.0 * 3.14159);
+                                    let norm = a + (1.0 - step(0.0, a));
 
-                                // Ring background (unfilled) and fill color
-                                let bg = vec3(0.88, 0.89, 0.91);
-                                let c_lo  = vec3(0.09, 0.64, 0.29); // green
-                                let c_mid = vec3(0.92, 0.70, 0.03); // amber
-                                let c_hi  = vec3(0.94, 0.27, 0.27); // red
-                                let fill_c = mix(
-                                    mix(c_lo, c_mid, smoothstep(0.5, 0.7, self.usage)),
-                                    c_hi, smoothstep(0.75, 0.9, self.usage)
-                                );
+                                    let filled = 1.0 - step(self.usage, norm);
 
-                                let c = mix(bg, fill_c, filled);
-                                return vec4(c, ring);
+                                    // Demo: surface-container-highest #d9e4e9 (bg) and primary #006972 (fill)
+                                    let bg = vec3(0.851, 0.894, 0.914);
+                                    let fill_c = vec3(0.0, 0.412, 0.447);
+
+                                    let c = mix(bg, fill_c, filled);
+                                    // Pre-multiply alpha so the donut hole and outside are fully transparent
+                                    return vec4(c * ring, ring);
+                                }
+                            }
+                        }
+
+                        ram_label_col = <View> {
+                            width: Fit, height: Fit
+                            flow: Down
+                            <Label> {
+                                width: Fit, height: Fit
+                                text: "RAM"
+                                draw_text: {
+                                    color: #3d494ab2
+                                    text_style: <FONT_SEMIBOLD>{ font_size: 9.0 }
+                                }
+                            }
+                            ram_label = <Label> {
+                                width: Fit, height: Fit
+                                margin: {top: -6}
+                                text: ""
+                                draw_text: {
+                                    color: #131d21
+                                    text_style: <FONT_SEMIBOLD>{ font_size: 11.0 }
+                                }
                             }
                         }
                     }
-                    ram_label = <Label> {
-                        text: ""
-                        margin: {right: 12}
-                        draw_text: {
-                            color: #6b7280
-                            text_style: { font_size: 8.5 }
-                        }
-                    }
+
+                }
+
+                // Header ↔ content divider
+                header_divider = <View> {
+                    width: Fill, height: 1
+                    show_bg: true
+                    draw_bg: { color: #bcc9ca }
                 }
 
                 // Content area
@@ -722,7 +735,7 @@ live_design! {
                         width: 260, height: Fill
                         show_bg: true
                         draw_bg: {
-                            color: #eaf6fa
+                            color: #eaf5fa
                         }
                         flow: Down, padding: {top: 16, bottom: 0, left: 16, right: 0}
 
@@ -738,10 +751,10 @@ live_design! {
                             // CHAT section
                             chat_section_label = <View> {
                                 width: Fill, height: Fit
-                                padding: {top: 4, bottom: 8, left: 0, right: 8}
+                                padding: {top: 4, bottom: 8, left: 8, right: 8}
                                 <Label> {
                                     text: "HISTORY"
-                                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 9.5 } }
+                                    draw_text: { color: #3d494a80, text_style: <FONT_SEMIBOLD>{ font_size: 10.0 } }
                                 }
                             }
 
@@ -814,10 +827,10 @@ live_design! {
                             // MODELS section
                             models_section_label = <View> {
                                 width: Fill, height: Fit
-                                padding: {top: 8, bottom: 8, left: 0, right: 8}
+                                padding: {top: 24, bottom: 8, left: 8, right: 8}
                                 <Label> {
                                     text: "MODELS"
-                                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 9.5 } }
+                                    draw_text: { color: #3d494a80, text_style: <FONT_SEMIBOLD>{ font_size: 10.0 } }
                                 }
                             }
 
@@ -830,49 +843,76 @@ live_design! {
 
                         }
 
-                        // Info button pinned at bottom of sidebar
-                        <View> {
+                        // Divider above Settings/About cluster
+                        sidebar_bottom_divider = <View> {
                             width: Fill, height: 1
-                            margin: {left: -16, right: 0, top: 8, bottom: 14}
+                            margin: {left: 0, right: 8, top: 8, bottom: 8}
                             show_bg: true
-                            draw_bg: { color: #c9d8dd }
+                            draw_bg: { color: #bcc9ca }
                         }
+
+                        // Settings + About pinned at bottom of sidebar
                         bottom_menu = <View> {
                             width: Fill, height: Fit
-                            padding: {right: 8, bottom: 10}
+                            padding: {right: 8, top: 0, bottom: 4}
                             flow: Down
                             settings_btn = <SidebarButton> {
                                 sidebar_label = { text: "Settings" }
                                 sidebar_icon = { source: (ICON_SETTINGS) }
                             }
                         }
-                        sidebar_info_btn = <View> {
-                            width: Fill, height: 44
-                            padding: {left: 10, right: 12}
-                            margin: {right: 8, bottom: 12}
-                            align: {y: 0.5}
-                            flow: Right
-                            cursor: Hand
 
-                            // Rounded "i" icon
+                        // About button - same visual weight as Settings, with SDF-drawn info icon
+                        sidebar_info_btn = <View> {
+                            width: Fill, height: 48
+                            padding: {top: 0, bottom: 0, left: 18, right: 12}
+                            margin: {right: 8, bottom: 14}
+                            flow: Right
+                            align: {x: 0.0, y: 0.5}
+                            cursor: Hand
+                            show_bg: true
+
+                            draw_bg: {
+                                instance hover: 0.0
+                                fn pixel(self) -> vec4 {
+                                    let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                    let normal = #00000000;
+                                    let hover_col = #dfeaef;
+                                    sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 4.0);
+                                    sdf.fill(mix(normal, hover_col, self.hover));
+                                    return sdf.result;
+                                }
+                            }
+
+                            animator: {
+                                hover = {
+                                    default: off
+                                    off = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 0.0}} }
+                                    on  = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 1.0}} }
+                                }
+                            }
+
+                            // Info icon - circle with "i" inside, same color as Settings icon
                             <View> {
-                                width: 18, height: 18
-                                margin: {right: 8}
+                                width: 20, height: 20
+                                margin: {right: 14}
+                                show_bg: true
                                 draw_bg: {
                                     fn pixel(self) -> vec4 {
                                         let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                        let c = vec2(9.0, 9.0);
-                                        // Circle
-                                        sdf.circle(c.x, c.y, 8.5);
-                                        sdf.fill(#9ca3af);
-                                        sdf.circle(c.x, c.y, 7.0);
-                                        sdf.fill(#ffffff);
-                                        // Dot
-                                        sdf.circle(c.x, 5.0, 1.3);
-                                        sdf.fill(#9ca3af);
-                                        // Stem
-                                        sdf.box(7.5, 7.5, 3.0, 5.5, 0.5);
-                                        sdf.fill(#9ca3af);
+                                        let cx = 10.0;
+                                        let cy = 10.0;
+                                        // Outer ring stroke ~1.4px
+                                        sdf.circle(cx, cy, 9.0);
+                                        sdf.fill(#33444b);
+                                        sdf.circle(cx, cy, 7.6);
+                                        sdf.fill(#eaf5fa);
+                                        // Dot of "i"
+                                        sdf.circle(cx, 6.4, 1.0);
+                                        sdf.fill(#33444b);
+                                        // Stem of "i"
+                                        sdf.box(cx - 0.9, 8.6, 1.8, 5.2, 0.6);
+                                        sdf.fill(#33444b);
                                         return sdf.result;
                                     }
                                 }
@@ -881,11 +921,18 @@ live_design! {
                             <Label> {
                                 text: "About"
                                 draw_text: {
-                                    fn get_color(self) -> vec4 { return #9ca3af; }
-                                    text_style: <FONT_MEDIUM>{ font_size: 10.5 }
+                                    text_style: <FONT_MEDIUM>{ font_size: 13.0 }
+                                    color: #33444b
                                 }
                             }
                         }
+                    }
+
+                    // Sidebar ↔ main content divider
+                    sidebar_main_divider = <View> {
+                        width: 1, height: Fill
+                        show_bg: true
+                        draw_bg: { color: #bcc9ca }
                     }
 
                     // Main content - app container
@@ -2689,32 +2736,48 @@ impl App {
             self.update_chat_tiles(cx);
         }
 
-        // Update button selection state (SidebarButton is a Button with draw_bg.selected)
-        // Chat button is selected for both ChatHistory and ActiveChat
+        // Update button selection state (SidebarButton bg.selected + label.draw_text.selected)
         let chat_selected = show_chat_history || show_active_chat;
+        let s_chat   = if chat_selected { 1.0 } else { 0.0 };
+        let s_llm    = if target == NavigationTarget::LlmHub   { 1.0 } else { 0.0 };
+        let s_vlm    = if target == NavigationTarget::VlmHub   { 1.0 } else { 0.0 };
+        let s_asr    = if target == NavigationTarget::AsrHub   { 1.0 } else { 0.0 };
+        let s_tts    = if target == NavigationTarget::TtsHub   { 1.0 } else { 0.0 };
+        let s_image  = if target == NavigationTarget::ImageHub { 1.0 } else { 0.0 };
+        let s_video  = if target == NavigationTarget::VideoHub { 1.0 } else { 0.0 };
+        let s_set    = if target == NavigationTarget::Settings { 1.0 } else { 0.0 };
+
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.chat_history_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if chat_selected { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_chat) }
+            sidebar_label = { draw_text: { selected: (s_chat) } }
         });
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.llm_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if target == NavigationTarget::LlmHub { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_llm) }
+            sidebar_label = { draw_text: { selected: (s_llm) } }
         });
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.vlm_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if target == NavigationTarget::VlmHub { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_vlm) }
+            sidebar_label = { draw_text: { selected: (s_vlm) } }
         });
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.asr_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if target == NavigationTarget::AsrHub { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_asr) }
+            sidebar_label = { draw_text: { selected: (s_asr) } }
         });
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.tts_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if target == NavigationTarget::TtsHub { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_tts) }
+            sidebar_label = { draw_text: { selected: (s_tts) } }
         });
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.image_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if target == NavigationTarget::ImageHub { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_image) }
+            sidebar_label = { draw_text: { selected: (s_image) } }
         });
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.video_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if target == NavigationTarget::VideoHub { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_video) }
+            sidebar_label = { draw_text: { selected: (s_video) } }
         });
         self.ui.view(ids!(body.body_layout.content.sidebar.bottom_menu.settings_btn)).apply_over(cx, live! {
-            draw_bg: { selected: (if target == NavigationTarget::Settings { 1.0 } else { 0.0 }) }
+            draw_bg: { selected: (s_set) }
+            sidebar_label = { draw_text: { selected: (s_set) } }
         });
 
         self.ui.redraw(cx);
@@ -3142,10 +3205,10 @@ impl App {
         self.ram_total_gb = total;
         self.ram_usage = if total > 0.0 { (used / total).min(1.0) } else { 0.0 };
 
-        self.ui.view(ids!(body.body_layout.header.ram_gauge))
+        self.ui.view(ids!(body.body_layout.header.ram_gauge_group.ram_gauge))
             .apply_over(cx, live! { draw_bg: { usage: (self.ram_usage) } });
-        self.ui.label(ids!(body.body_layout.header.ram_label))
-            .set_text(cx, &format!("RAM\n{:.0}/{:.0}GB", self.ram_used_gb, self.ram_total_gb));
+        self.ui.label(ids!(body.body_layout.header.ram_gauge_group.ram_label_col.ram_label))
+            .set_text(cx, &format!("{:.0}/{:.0}GB", self.ram_used_gb, self.ram_total_gb));
         self.ui.redraw(cx);
     }
 }
