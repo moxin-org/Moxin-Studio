@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 pub mod a2ui_builder;
 pub mod model_runtime_client;
 pub mod a2ui_tools;

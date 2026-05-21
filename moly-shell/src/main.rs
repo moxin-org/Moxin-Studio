@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 mod app;
 
 /// Sets the macOS Dock icon and menubar app name.
@@ -73,6 +75,15 @@ fn main() {
     env_logger::init();
     log::info!("Starting Moly");
 
+    #[cfg(not(target_arch = "wasm32"))]
+    let _tokio_runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .ok();
+    #[cfg(not(target_arch = "wasm32"))]
+    let _tokio_guard = _tokio_runtime.as_ref().map(|runtime| runtime.enter());
+
     // Install panic hook that appends ALL panics to /tmp/studio_panic.log
     use std::io::Write;
     std::panic::set_hook(Box::new(|info| {
@@ -121,8 +132,8 @@ fn main() {
     #[cfg(unix)]
     unsafe {
         libc::atexit(cleanup_on_exit);
-        libc::signal(libc::SIGINT, sigint_handler as libc::sighandler_t);
-        libc::signal(libc::SIGTERM, sigint_handler as libc::sighandler_t);
+        libc::signal(libc::SIGINT, sigint_handler as *const () as libc::sighandler_t);
+        libc::signal(libc::SIGTERM, sigint_handler as *const () as libc::sighandler_t);
     }
 
     app::app_main();

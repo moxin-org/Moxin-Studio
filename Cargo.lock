@@ -3499,7 +3499,6 @@ dependencies = [
 [[package]]
 name = "moly-kit"
 version = "0.2.3"
-source = "git+https://github.com/ymote/moly?rev=ad02d12#ad02d1238b729b38e8a9893cff51829e9280a33c"
 dependencies = [
  "aitk",
  "async-stream",

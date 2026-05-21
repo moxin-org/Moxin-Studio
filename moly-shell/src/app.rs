@@ -3074,7 +3074,7 @@ impl App {
             let _ = tx.send(match result {
                 Ok(info) => info,
                 Err(e) => {
-                    ::log::warn!("Update check failed: {}", e);
+                    ::log::debug!("Update check failed: {}", e);
                     None
                 }
             });

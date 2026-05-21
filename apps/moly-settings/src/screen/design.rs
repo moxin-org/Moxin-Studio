@@ -46,7 +46,6 @@ live_design! {
     SettingsTextInput = <TextInput> {
         width: Fill, height: 44
         padding: {left: 12, right: 12, top: 10, bottom: 10}
-        cursor: Text
 
         draw_bg: {
             instance radius: 6.0

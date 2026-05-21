@@ -25,7 +25,7 @@ makepad-widgets = { git = "https://github.com/makepad/makepad", branch = "dev" }
 makepad-component = { git = "https://github.com/ZhangHanDong/makepad-component", package = "makepad-component" }
 
 # Moly-kit for chat widgets (from ymote/moly fork)
-moly-kit = { git = "https://github.com/ymote/moly", rev = "ad02d12", package = "moly-kit", features = ["full"] }
+moly-kit = { path = "vendor/moly-kit", features = ["full"] }
 
 # AI toolkit for chat controller and clients (from ymote/aitk fork)
 aitk = { git = "https://github.com/ymote/aitk", branch = "fix/openai-compat-and-crash-guard", features = ["async-rt", "http", "mcp"] }

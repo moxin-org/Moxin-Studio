@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub mod design;
 
 use makepad_widgets::*;
@@ -2004,7 +2005,7 @@ impl ModelHubApp {
                     true
                 }
                 Ok(Err(e)) => {
-                    ::log::warn!("Server status poll failed: {}", e);
+                    ::log::debug!("Server status poll failed: {}", e);
                     true
                 }
                 Err(mpsc::TryRecvError::Empty)        => false,

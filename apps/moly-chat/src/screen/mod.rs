@@ -1,4 +1,5 @@
 //! Chat Screen Widget Implementation
+#![allow(dead_code, unused_variables)]
 
 pub mod design;
 
@@ -2312,7 +2313,7 @@ impl ChatApp {
         for provider in &enabled_providers {
             let api_key = provider.api_key.clone().unwrap_or_default();
             let api_key = api_key.trim().to_string();
-            if api_key.is_empty() {
+            if provider.requires_api_key() && api_key.is_empty() {
                 ::log::warn!("API key is empty for provider {}", provider.id);
                 continue;
             }
