@@ -27,16 +27,17 @@ live_design! {
     ICON_HAMBURGER = dep("crate://self/resources/icons/hamburger.png")
     ICON_APP = dep("crate://self/resources/icons/app.svg")
     ICON_MOON = dep("crate://self/resources/icons/moon.svg")
-    ICON_CHAT = dep("crate://self/resources/icons/chat.svg")
-    ICON_SETTINGS = dep("crate://self/resources/icons/settings.svg")
+    ICON_CHAT = dep("crate://self/resources/icons/chat.png")
+    ICON_SETTINGS = dep("crate://self/resources/icons/settings.png")
     ICON_HUB = dep("crate://self/resources/icons/hub.svg")
-    ICON_LLM = dep("crate://self/resources/icons/llm.svg")
-    ICON_VLM = dep("crate://self/resources/icons/vlm.svg")
-    ICON_ASR = dep("crate://self/resources/icons/asr.svg")
-    ICON_TTS = dep("crate://self/resources/icons/tts.svg")
-    ICON_IMAGE = dep("crate://self/resources/icons/image.svg")
-    ICON_VIDEO = dep("crate://self/resources/icons/video.svg")
-    ICON_NEW_CHAT = dep("crate://self/resources/icons/new-chat.svg")
+    ICON_LLM = dep("crate://self/resources/icons/llm.png")
+    ICON_VLM = dep("crate://self/resources/icons/vlm.png")
+    ICON_ASR = dep("crate://self/resources/icons/asr.png")
+    ICON_TTS = dep("crate://self/resources/icons/tts.png")
+    ICON_IMAGE = dep("crate://self/resources/icons/image.png")
+    ICON_VIDEO = dep("crate://self/resources/icons/video.png")
+    ICON_NEW_CHAT = dep("crate://self/resources/icons/plus.svg")
+    ICON_SEARCH = dep("crate://self/resources/icons/search.svg")
     ICON_TRASH = dep("crate://self/resources/icons/trash.svg")
 
     // Logo (light and dark variants)
@@ -150,11 +151,9 @@ live_design! {
             }
         }
 
-        sidebar_icon = <Icon> {
-            icon_walk: {width: 20, height: 20, margin: {right: 14}}
-            draw_icon: {
-                color: #41525a
-            }
+        sidebar_icon = <Image> {
+            width: 20, height: 20
+            margin: {right: 14}
         }
         sidebar_label = <Label> {
             draw_text: {
@@ -164,13 +163,15 @@ live_design! {
         }
     }
 
-    // Accent CTA button for "New Chat" — blue background, white text/icon
-    NewChatButton = <Button> {
+    // Accent CTA button for "New Session" drawn as a view so the pill shape is stable.
+    NewChatButton = <View> {
         width: Fill, height: 50
-        padding: {top: 9, bottom: 9, left: 14, right: 14}
+        padding: {top: 0, bottom: 0, left: 14, right: 14}
         margin: {bottom: 26}
+        flow: Right
         align: {x: 0.5, y: 0.5}
-        icon_walk: {width: 18, height: 18, margin: {right: 10}}
+        cursor: Hand
+        show_bg: true
 
         animator: {
             hover = {
@@ -210,20 +211,24 @@ live_design! {
                     pressed_color,
                     self.pressed
                 );
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 24.0);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 10.0);
                 sdf.fill(color);
                 return sdf.result;
             }
         }
 
-        draw_text: {
-            text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
-            color: #ffffff
+        new_chat_icon = <Icon> {
+            icon_walk: {width: 18, height: 18, margin: {right: 10}}
+            draw_icon: {
+                svg_file: (ICON_NEW_CHAT)
+                color: #ffffff
+            }
         }
-
-        draw_icon: {
-            fn get_color(self) -> vec4 {
-                return #ffffff;
+        new_chat_label = <Label> {
+            text: "New Session"
+            draw_text: {
+                text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
+                color: #ffffff
             }
         }
     }
@@ -728,10 +733,7 @@ live_design! {
                             padding: {right: 8}
 
                             // New Chat - primary CTA button (accent blue)
-                            new_chat_btn = <NewChatButton> {
-                                text: "New Session"
-                                draw_icon: { svg_file: (ICON_NEW_CHAT) }
-                            }
+                            new_chat_btn = <NewChatButton> {}
 
                             // CHAT section
                             chat_section_label = <View> {
@@ -750,7 +752,7 @@ live_design! {
 
                                 chat_history_btn = <SidebarButton> {
                                     sidebar_label = { text: "Session History" }
-                                    sidebar_icon = { draw_icon: { svg_file: (ICON_CHAT) } }
+                                    sidebar_icon = { source: (ICON_CHAT) }
                                 }
 
                                 // Chat history sublist (collapsible, visible when sidebar expanded)
@@ -819,12 +821,12 @@ live_design! {
                                 }
                             }
 
-                            llm_btn   = <SidebarButton> { sidebar_label = { text: "LLM" }   sidebar_icon = { draw_icon: { svg_file: (ICON_LLM) } } }
-                            vlm_btn   = <SidebarButton> { sidebar_label = { text: "VLM" }   sidebar_icon = { draw_icon: { svg_file: (ICON_VLM) } } }
-                            asr_btn   = <SidebarButton> { sidebar_label = { text: "ASR" }   sidebar_icon = { draw_icon: { svg_file: (ICON_ASR) } } }
-                            tts_btn   = <SidebarButton> { sidebar_label = { text: "TTS" }   sidebar_icon = { draw_icon: { svg_file: (ICON_TTS) } } }
-                            image_btn = <SidebarButton> { sidebar_label = { text: "Image" } sidebar_icon = { draw_icon: { svg_file: (ICON_IMAGE) } } }
-                            video_btn = <SidebarButton> { sidebar_label = { text: "Video" } sidebar_icon = { draw_icon: { svg_file: (ICON_VIDEO) } } }
+                            llm_btn   = <SidebarButton> { sidebar_label = { text: "LLM" }   sidebar_icon = { source: (ICON_LLM) } }
+                            vlm_btn   = <SidebarButton> { sidebar_label = { text: "VLM" }   sidebar_icon = { source: (ICON_VLM) } }
+                            asr_btn   = <SidebarButton> { sidebar_label = { text: "ASR" }   sidebar_icon = { source: (ICON_ASR) } }
+                            tts_btn   = <SidebarButton> { sidebar_label = { text: "TTS" }   sidebar_icon = { source: (ICON_TTS) } }
+                            image_btn = <SidebarButton> { sidebar_label = { text: "Image" } sidebar_icon = { source: (ICON_IMAGE) } }
+                            video_btn = <SidebarButton> { sidebar_label = { text: "Video" } sidebar_icon = { source: (ICON_VIDEO) } }
 
                         }
 
@@ -841,7 +843,7 @@ live_design! {
                             flow: Down
                             settings_btn = <SidebarButton> {
                                 sidebar_label = { text: "Settings" }
-                                sidebar_icon = { draw_icon: { svg_file: (ICON_SETTINGS) } }
+                                sidebar_icon = { source: (ICON_SETTINGS) }
                             }
                         }
                         sidebar_info_btn = <View> {
@@ -936,7 +938,7 @@ live_design! {
                                     // Search icon
                                     <Icon> {
                                         draw_icon: {
-                                            svg_file: (ICON_CHAT)
+                                            svg_file: (ICON_SEARCH)
                                             color: #6b7280
                                         }
                                         icon_walk: {width: 20, height: 20, margin: {right: 12}}
@@ -1917,7 +1919,7 @@ impl MatchEvent for App {
 
         // Handle New Chat button click (first item in sidebar)
         // Use full path from Window root: body.content.sidebar.new_chat_btn
-        let new_chat_clicked = self.ui.button(ids!(body.body_layout.content.sidebar.sidebar_scroll.new_chat_btn)).clicked(&actions);
+        let new_chat_clicked = self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.new_chat_btn)).finger_down(&actions).is_some();
         let chat_clicked = self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.chat_history_btn)).finger_down(&actions).is_some();
 
         if new_chat_clicked {

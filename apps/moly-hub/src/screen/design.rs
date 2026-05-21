@@ -7,6 +7,8 @@ live_design! {
     use link::widgets::*;
     use moly_widgets::theme::*;
 
+    ICON_SEARCH = dep("crate://self/resources/icons/search.svg")
+
     // ── Category badge (5 categories: LLM=0, VLM=1, ASR=2, TTS=3, Image=4) ──
 
     HubCategoryBadge = <View> {
@@ -236,18 +238,19 @@ live_design! {
             instance purple: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 22.0);
+                sdf.box(1.0, 1.0, self.rect_size.x - 2.0, self.rect_size.y - 2.0, 10.0);
                 let teal = mix(#26aab5, #1f98a2, self.hover);
                 let purple = mix(#5b3de0, #4c30cf, self.hover);
                 let primary = mix(teal, purple, self.purple);
-                let danger  = mix(#b91c1c, #991b1b, self.hover); // no e after digit
-                let color = mix(primary, danger, self.danger);
-                sdf.fill(mix(color, color * 0.9, self.pressed));
+                let danger_fill = #eef8fb;
+                let color = mix(primary, danger_fill, self.danger);
+                sdf.fill(mix(color, color * 0.96, self.pressed));
+                sdf.stroke(vec4(0.72, 0.11, 0.11, self.danger), 1.0);
                 return sdf.result;
             }
         }
         draw_text: {
-            fn get_color(self) -> vec4 { return #ffffff; }
+            color: #ffffff
             text_style: <FONT_SEMIBOLD>{ font_size: 13.0 }
         }
     }
@@ -316,8 +319,8 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 12.0);
-                sdf.fill(#eef8fb);
-                sdf.stroke(#bfcfd5, 1.0);
+                sdf.fill(#f8fdff);
+                sdf.stroke(#b8cbd2, 1.2);
                 return sdf.result;
             }
         }
@@ -347,8 +350,8 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 12.0);
-                sdf.fill(#eef8fb);
-                sdf.stroke(#cbd8dd, 1.0);
+                sdf.fill(#f8fdff);
+                sdf.stroke(#b8cbd2, 1.2);
                 return sdf.result;
             }
         }
@@ -386,8 +389,8 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 11.0);
-                sdf.fill(#eef8fb);
-                sdf.stroke(#bfcfd5, 1.0);
+                sdf.fill(#f8fdff);
+                sdf.stroke(#b8cbd2, 1.2);
                 return sdf.result;
             }
         }
@@ -437,6 +440,7 @@ live_design! {
                         text: "Cancel"
                         visible: false
                         draw_bg: { danger: 1.0 }
+                        draw_text: { color: #b91c1c }
                     }
                 }
                 panel_runtime_row = <View> {
@@ -453,6 +457,7 @@ live_design! {
                         text: "Remove"
                         visible: false
                         draw_bg: { danger: 1.0 }
+                        draw_text: { color: #b91c1c }
                     }
                     panel_unload_btn = <HubActionButton> {
                         text: "Unload"
@@ -793,11 +798,12 @@ live_design! {
             <View> {
                 width: Fill, height: Fit
                 padding: {left: 16, right: 16, top: 0, bottom: 10}
-                search_input = <TextInput> {
+                search_container = <View> {
                     width: Fill, height: 40
-                    padding: {left: 14, right: 14, top: 10, bottom: 9}
-                    label_align: {x: 0.0, y: 0.5}
-                    empty_text: "Search models..."
+                    padding: {left: 14, right: 14}
+                    flow: Right
+                    align: {y: 0.5}
+                    show_bg: true
                     draw_bg: {
                         fn pixel(self) -> vec4 {
                             let sdf = Sdf2d::viewport(self.pos * self.rect_size);
@@ -806,19 +812,37 @@ live_design! {
                             return sdf.result;
                         }
                     }
-                    draw_text: {
-                        fn get_color(self) -> vec4 { return #374151; }
-                        color: #374151
-                        color_empty: #9ca3af
-                        text_style: { font_size: 12.5 }
+                    <Icon> {
+                        icon_walk: {width: 18, height: 18, margin: {right: 8}}
+                        draw_icon: {
+                            svg_file: (ICON_SEARCH)
+                            color: #5f7078
+                        }
                     }
-                    draw_cursor: {
-                        uniform border_radius: 0.5
-                        fn pixel(self) -> vec4 {
-                            let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius);
-                            sdf.fill(mix(#00000000, #1f2937, (1.0 - self.blink) * self.focus));
-                            return sdf.result;
+                    search_input = <TextInput> {
+                        width: Fill, height: 34
+                        padding: {left: 0, right: 0, top: 7, bottom: 7}
+                        label_align: {x: 0.0, y: 0.5}
+                        empty_text: "Search models..."
+                        draw_bg: {
+                            fn pixel(self) -> vec4 {
+                                return #00000000;
+                            }
+                        }
+                        draw_text: {
+                            fn get_color(self) -> vec4 { return #374151; }
+                            color: #374151
+                            color_empty: #9ca3af
+                            text_style: { font_size: 12.5 }
+                        }
+                        draw_cursor: {
+                            uniform border_radius: 0.5
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius);
+                                sdf.fill(mix(#00000000, #1f2937, (1.0 - self.blink) * self.focus));
+                                return sdf.result;
+                            }
                         }
                     }
                 }
@@ -1491,6 +1515,7 @@ live_design! {
                         text: "Cancel"
                         visible: false
                         draw_bg: { danger: 1.0 }
+                        draw_text: { color: #b91c1c }
                     }
                 }
 
