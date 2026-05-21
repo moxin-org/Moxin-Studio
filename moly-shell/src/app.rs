@@ -470,7 +470,7 @@ live_design! {
                     padding: {left: 20, right: 20, top: 16}
                     show_bg: true
                     draw_bg: {
-                        color: #f1fbff
+                        color: #ffffff
                     }
 
                     // Hamburger menu button
@@ -735,7 +735,7 @@ live_design! {
                         width: 260, height: Fill
                         show_bg: true
                         draw_bg: {
-                            color: #eaf5fa
+                            color: #f3f5f9
                         }
                         flow: Down, padding: {top: 16, bottom: 0, left: 16, right: 0}
 
@@ -906,7 +906,7 @@ live_design! {
                                         sdf.circle(cx, cy, 9.0);
                                         sdf.fill(#33444b);
                                         sdf.circle(cx, cy, 7.6);
-                                        sdf.fill(#eaf5fa);
+                                        sdf.fill(#f3f5f9);
                                         // Dot of "i"
                                         sdf.circle(cx, 6.4, 1.0);
                                         sdf.fill(#33444b);

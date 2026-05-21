@@ -189,7 +189,7 @@ live_design! {
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #f1fbff;
+                return #ffffff;
             }
         }
         // Demo: text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest
@@ -211,7 +211,7 @@ live_design! {
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #f1fbff;
+                return #ffffff;
             }
         }
         category_header_label = <Label> {
@@ -486,7 +486,7 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
-                sdf.fill(#f1fbff);
+                sdf.fill(#ffffff);
                 sdf.stroke(#bcc9ca, 1.0);
                 return sdf.result;
             }
@@ -556,8 +556,8 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
-                // Fill: surface-container-highest at ~30% on surface-container-low → ~#e2eef2
-                sdf.fill(#e7eff1);
+                // Fill: white background to match other cards
+                sdf.fill(#ffffff);
                 // Dashed border simulated by stroking with antialiased dash pattern
                 let half_p = self.rect_size * 0.5;
                 let pos = self.pos * self.rect_size;
@@ -568,7 +568,7 @@ live_design! {
                 let t = (pos.x + pos.y) * (1.0 / 14.0);
                 let dash = step(0.5, fract(t));
                 let dash_col = vec4(0.737, 0.788, 0.792, on_edge * dash);
-                return mix(vec4(0.906, 0.937, 0.945, 1.0), dash_col, dash_col.w);
+                return mix(vec4(1.0, 1.0, 1.0, 1.0), dash_col, dash_col.w);
             }
         }
 
@@ -651,7 +651,7 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
-                sdf.fill(#f1fbff);
+                sdf.fill(#ffffff);
                 sdf.stroke(#bcc9ca, 1.0);
                 return sdf.result;
             }
@@ -1112,7 +1112,7 @@ live_design! {
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #f1fbff;
+                return #ffffff;
             }
         }
 
@@ -1122,7 +1122,7 @@ live_design! {
             flow: Down
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #f1fbff; }
+                fn pixel(self) -> vec4 { return #ffffff; }
             }
 
             // Header
@@ -1163,9 +1163,9 @@ live_design! {
                     draw_bg: {
                         fn pixel(self) -> vec4 {
                             let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                            // Demo: bg-surface-container-low rounded-xl (12px corners → r=6)
+                            // Search bg: same neutral gray as sidebar/workspace for cohesion
                             sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 6.0);
-                            sdf.fill(#eaf5fa);
+                            sdf.fill(#f3f5f9);
                             return sdf.result;
                         }
                     }
@@ -1234,7 +1234,7 @@ live_design! {
             flow: Overlay
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #eaf5fa; }
+                fn pixel(self) -> vec4 { return #f3f5f9; }
             }
 
             // Empty state (default)
