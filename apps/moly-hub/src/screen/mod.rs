@@ -576,6 +576,9 @@ impl ModelHubApp {
 
                     let item = list.item(cx, item_id, live_id!(HubModelItem));
                     item.label(ids!(model_name)).set_text(cx, &name);
+                    item.label(ids!(model_name)).apply_over(cx, live! {
+                        draw_text: { selected: (if sel { 1.0_f64 } else { 0.0_f64 }) }
+                    });
                     item.view(ids!(model_status)).apply_over(cx, live! { draw_bg: { status: (dot) } });
                     item.apply_over(cx, live! { draw_bg: { selected: (if sel { 1.0_f64 } else { 0.0_f64 }) } });
                     // Show "Downloaded" badge for downloaded or loaded models

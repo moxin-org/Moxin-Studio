@@ -105,7 +105,7 @@ live_design! {
     HubModelListItem = <View> {
         width: Fill, height: Fit
         padding: {left: 0, right: 0, top: 0, bottom: 0}
-        margin: {left: 8, right: 8, bottom: 3}
+        margin: {left: 10, right: 8, bottom: 5}
         flow: Down
         cursor: Hand
         event_order: Down
@@ -114,12 +114,11 @@ live_design! {
             instance selected: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
                 let base = #00000000;
-                let selected = #e4ebf5;
+                let selected = #dff3f8;
                 sdf.fill(mix(base, selected, self.selected));
-                sdf.box(0.0, 9.0, 3.0, self.rect_size.y - 18.0, 1.5);
-                sdf.fill(vec4(0.04, 0.63, 0.59, self.selected));
+                sdf.stroke(vec4(0.45, 0.74, 0.78, self.selected), 1.0);
                 return sdf.result;
             }
         }
@@ -127,23 +126,24 @@ live_design! {
             width: Fill, height: 44
             flow: Right
             align: {y: 0.5}
-            padding: {left: 14, right: 10}
-            model_status = <HubStatusDot> {}
+            padding: {left: 16, right: 10}
+            model_status = <HubStatusDot> { width: 0, height: 0, margin: {right: 0} }
             model_name = <Label> {
                 width: Fill
                 flow: Right
                 align: {y: 0.5}
                 margin: {right: 8}
                 draw_text: {
+                    instance selected: 0.0
                     fn get_color(self) -> vec4 {
-                        return #111827;
+                        return mix(#273941, #0d737c, self.selected);
                     }
-                    text_style: <FONT_MEDIUM>{ font_size: 11.0 }
+                    text_style: <FONT_SEMIBOLD>{ font_size: 12.0 }
                     wrap: Ellipsis
                 }
             }
             downloaded_badge = <View> {
-                width: 52, height: 26
+                width: 50, height: 22
                 padding: {left: 6, right: 6, top: 0, bottom: 0}
                 margin: {left: 0}
                 align: {x: 0.5, y: 0.5}
@@ -158,10 +158,10 @@ live_design! {
                     }
                 }
                 <Label> {
-                    text: "Ready"
+                    text: "READY"
                     draw_text: {
                         fn get_color(self) -> vec4 { return #047857; }
-                        text_style: <FONT_MEDIUM>{ font_size: 9.0 }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 8.5 }
                     }
                 }
             }
@@ -173,19 +173,19 @@ live_design! {
 
     HubSubfolderGroupHeader = <View> {
         width: Fill, height: Fit
-        padding: {left: 24, right: 14, top: 12, bottom: 5}
+        padding: {left: 24, right: 14, top: 14, bottom: 6}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #f7f9fc;
+                return #eef8fb;
             }
         }
         subfolder_header_label = <Label> {
             draw_text: {
                 fn get_color(self) -> vec4 {
-                    return #6b7280;
+                    return #7b8c93;
                 }
-                text_style: <FONT_MEDIUM>{ font_size: 9.5 }
+                text_style: <FONT_SEMIBOLD>{ font_size: 9.0 }
             }
         }
     }
@@ -198,13 +198,13 @@ live_design! {
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #f7f9fc;
+                return #eef8fb;
             }
         }
         category_header_label = <Label> {
             draw_text: {
                 fn get_color(self) -> vec4 {
-                    return #9ca3af;
+                    return #7b8c93;
                 }
                 text_style: <FONT_SEMIBOLD>{ font_size: 10.0 }
             }
@@ -712,38 +712,38 @@ live_design! {
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
-                return #f8fafc;
+                return #eef8fb;
             }
         }
 
         // ── Left panel ──────────────────────────────────────────────────────
         hub_left_panel = <View> {
-            width: 276, height: Fill
+            width: 320, height: Fill
             flow: Down
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #f7f9fc; }
+                fn pixel(self) -> vec4 { return #eef8fb; }
             }
 
             // Header
             <View> {
-                width: Fill, height: 54
-                padding: {left: 18, right: 18}
+                width: Fill, height: 56
+                padding: {left: 16, right: 16}
                 align: {y: 0.5}
                 hub_title_label = <Label> {
                     text: "Model Hub"
                     draw_text: {
                         fn get_color(self) -> vec4 {
-                            return #1f2937;
+                            return #15242b;
                         }
-                        text_style: <FONT_SEMIBOLD>{ font_size: 15.5 }
+                        text_style: <FONT_SEMIBOLD>{ font_size: 16.5 }
                     }
                 }
             }
 
             // Divider
             hub_header_divider = <View> {
-                width: Fill, height: 1
+                width: Fill, height: 0
                 show_bg: true
                 draw_bg: {
                     fn pixel(self) -> vec4 { return #f1f5f9; }
@@ -753,18 +753,17 @@ live_design! {
             // Search
             <View> {
                 width: Fill, height: Fit
-                padding: {left: 14, right: 14, top: 10, bottom: 8}
+                padding: {left: 16, right: 16, top: 0, bottom: 10}
                 search_input = <TextInput> {
-                    width: Fill, height: 34
-                    padding: {left: 12, right: 12, top: 8, bottom: 7}
+                    width: Fill, height: 40
+                    padding: {left: 14, right: 14, top: 10, bottom: 9}
                     label_align: {x: 0.0, y: 0.5}
                     empty_text: "Search models..."
                     draw_bg: {
                         fn pixel(self) -> vec4 {
                             let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
-                            sdf.fill(#ffffff);
-                            sdf.stroke(#e5e7eb, 1.0);
+                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 9.0);
+                            sdf.fill(#e4f1f6);
                             return sdf.result;
                         }
                     }
@@ -772,7 +771,7 @@ live_design! {
                         fn get_color(self) -> vec4 { return #374151; }
                         color: #374151
                         color_empty: #9ca3af
-                        text_style: { font_size: 12.0 }
+                        text_style: { font_size: 12.5 }
                     }
                     draw_cursor: {
                         uniform border_radius: 0.5
@@ -798,16 +797,13 @@ live_design! {
 
         }
 
-        // Vertical divider – 8 px wide for easy dragging, visually 1px center line
+        // Vertical divider
         hub_main_divider = <View> {
-            width: 8, height: Fill
+            width: 1, height: Fill
             show_bg: true
             draw_bg: {
                 fn pixel(self) -> vec4 {
-                    // 1px opaque line in center, transparent on either side
-                    let dist = abs(self.pos.x - 0.5) * self.rect_size.x;
-                    let col  = #e2e8f0;
-                    return vec4(col.r, col.g, col.b, 1.0 - step(0.5, dist));
+                    return #c7d7dd;
                 }
             }
         }
@@ -818,7 +814,7 @@ live_design! {
             flow: Overlay
             show_bg: true
             draw_bg: {
-                fn pixel(self) -> vec4 { return #f7f9fc; }
+                fn pixel(self) -> vec4 { return #eef8fb; }
             }
 
             // Empty state (default)
