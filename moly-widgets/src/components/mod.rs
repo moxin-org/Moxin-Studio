@@ -41,9 +41,9 @@ live_design! {
     // ========================================================================
 
     pub ChatListItem = <View> {
-        width: Fill, height: 34
-        padding: {left: 10, right: 10}
-        margin: {right: 6, bottom: 4}
+        width: Fill, height: 24
+        padding: {left: 0, right: 8}
+        margin: {right: 6, bottom: 2}
         align: {y: 0.5}
         cursor: Hand
         show_bg: true
@@ -53,8 +53,8 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 let base = #00000000;
-                let hover = #f6f7f9;
-                let selected = #eef2f7;
+                let hover = #00000000;
+                let selected = #d8e7eb;
                 sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
                 sdf.fill(mix(mix(base, hover, self.hover), selected, self.selected));
                 return sdf.result;
@@ -71,8 +71,8 @@ live_design! {
             width: Fill, height: 16
             flow: Right
             draw_text: {
-                color: #4b5563
-                text_style: { font_size: 11.0 }
+                color: vec4(0.32, 0.40, 0.43, 1.0)
+                text_style: <FONT_MEDIUM>{ font_size: 11.0 }
                 wrap: Ellipsis
             }
         }

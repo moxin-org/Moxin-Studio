@@ -25,16 +25,17 @@ live_design! {
 
     // Icon dependencies
     ICON_HAMBURGER = dep("crate://self/resources/icons/hamburger.png")
+    ICON_APP = dep("crate://self/resources/icons/app.svg")
     ICON_MOON = dep("crate://self/resources/icons/moon.svg")
-    ICON_CHAT = dep("crate://self/resources/icons/chat.png")
-    ICON_SETTINGS = dep("crate://self/resources/icons/settings.png")
+    ICON_CHAT = dep("crate://self/resources/icons/chat.svg")
+    ICON_SETTINGS = dep("crate://self/resources/icons/settings.svg")
     ICON_HUB = dep("crate://self/resources/icons/hub.svg")
-    ICON_LLM = dep("crate://self/resources/icons/llm.png")
-    ICON_VLM = dep("crate://self/resources/icons/vlm.png")
-    ICON_ASR = dep("crate://self/resources/icons/asr.png")
-    ICON_TTS = dep("crate://self/resources/icons/tts.png")
-    ICON_IMAGE = dep("crate://self/resources/icons/image.png")
-    ICON_VIDEO = dep("crate://self/resources/icons/video.png")
+    ICON_LLM = dep("crate://self/resources/icons/llm.svg")
+    ICON_VLM = dep("crate://self/resources/icons/vlm.svg")
+    ICON_ASR = dep("crate://self/resources/icons/asr.svg")
+    ICON_TTS = dep("crate://self/resources/icons/tts.svg")
+    ICON_IMAGE = dep("crate://self/resources/icons/image.svg")
+    ICON_VIDEO = dep("crate://self/resources/icons/video.svg")
     ICON_NEW_CHAT = dep("crate://self/resources/icons/new-chat.svg")
     ICON_TRASH = dep("crate://self/resources/icons/trash.svg")
 
@@ -115,9 +116,9 @@ live_design! {
     // Note: Button's draw_bg/draw_text/draw_icon don't support custom instance variables,
     // so we use fixed colors for light mode. Theme switching can be done by swapping button styles.
     SidebarButton = <View> {
-        width: Fill, height: 38
-        padding: {top: 7, bottom: 7, left: 12, right: 12}
-        margin: {bottom: 2}
+        width: Fill, height: 48
+        padding: {top: 0, bottom: 0, left: 18, right: 12}
+        margin: {bottom: 4}
         flow: Right
         align: {x: 0.0, y: 0.5}
         cursor: Hand
@@ -130,11 +131,13 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 let normal = #00000000;
-                let hover = #f3f4f6;
-                let selected_bg = #eef2f7;
+                let hover = #ddecef;
+                let selected_bg = #d8e7eb;
                 let color = mix(mix(normal, hover, self.hover), selected_bg, self.selected);
-                sdf.box(2.0, 2.0, self.rect_size.x - 4.0, self.rect_size.y - 4.0, 7.0);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
                 sdf.fill(color);
+                sdf.box(self.rect_size.x - 3.0, 0.0, 3.0, self.rect_size.y, 0.0);
+                sdf.fill(vec4(0.04, 0.47, 0.51, self.selected));
                 return sdf.result;
             }
         }
@@ -147,26 +150,27 @@ live_design! {
             }
         }
 
-        sidebar_icon = <Image> {
-            width: 22, height: 22
-            margin: {right: 12}
-            fit: Smallest
+        sidebar_icon = <Icon> {
+            icon_walk: {width: 20, height: 20, margin: {right: 14}}
+            draw_icon: {
+                color: #41525a
+            }
         }
         sidebar_label = <Label> {
             draw_text: {
-                text_style: <FONT_MEDIUM>{ font_size: 12.5 }
-                color: (TEXT_PRIMARY)
+                text_style: <FONT_MEDIUM>{ font_size: 13.0 }
+                color: #33444b
             }
         }
     }
 
     // Accent CTA button for "New Chat" — blue background, white text/icon
     NewChatButton = <Button> {
-        width: Fill, height: 40
+        width: Fill, height: 50
         padding: {top: 9, bottom: 9, left: 14, right: 14}
-        margin: {bottom: 18}
+        margin: {bottom: 26}
         align: {x: 0.5, y: 0.5}
-        icon_walk: {width: 18, height: 18, margin: {right: 8}}
+        icon_walk: {width: 18, height: 18, margin: {right: 10}}
 
         animator: {
             hover = {
@@ -206,14 +210,14 @@ live_design! {
                     pressed_color,
                     self.pressed
                 );
-                sdf.box(2.0, 2.0, self.rect_size.x - 4.0, self.rect_size.y - 4.0, 8.0);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 24.0);
                 sdf.fill(color);
                 return sdf.result;
             }
         }
 
         draw_text: {
-            text_style: <FONT_SEMIBOLD>{ font_size: 12.5 }
+            text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
             color: #ffffff
         }
 
@@ -227,10 +231,10 @@ live_design! {
     // Small uppercase section header label for sidebar groups
     SidebarSectionLabel = <Label> {
         width: Fill, height: Fit
-        margin: {top: 8, bottom: 2, left: 12, right: 8}
+        margin: {top: 8, bottom: 6, left: 6, right: 8}
         draw_text: {
-            color: (TEXT_MUTED)
-            text_style: <FONT_MEDIUM>{ font_size: 10.0 }
+            color: #7c8d94
+            text_style: <FONT_MEDIUM>{ font_size: 9.5 }
         }
     }
 
@@ -446,34 +450,57 @@ live_design! {
 
                 // Header
                 header = <View> {
-                    width: Fill, height: 72
+                    width: Fill, height: 64
                     flow: Right
                     align: {y: 0.5}
-                    padding: {left: 20, right: 20, top: 16}
+                    padding: {left: 16, right: 16}
                     show_bg: true
                     draw_bg: {
-                        color: #ffffff
-                    }
-
-                    // Hamburger menu button
-                    hamburger_btn = <View> {
-                        width: 40, height: Fit
-                        margin: {right: 12}
-                        align: {x: 0.5, y: 0.5}
-                        cursor: Hand
-                        event_order: Down
-                        show_bg: false
-
-                        hamburger_icon = <Image> {
-                            source: (ICON_HAMBURGER)
-                            width: 20, height: 20
-                            fit: Smallest
+                        fn pixel(self) -> vec4 {
+                            let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 0.0);
+                            sdf.fill(#eef8fb);
+                            sdf.box(0.0, self.rect_size.y - 1.0, self.rect_size.x, 1.0, 0.0);
+                            sdf.fill(#c6d5da);
+                            return sdf.result;
                         }
                     }
 
-                    logo_light = <Image> {
-                        source: (IMG_LOGO)
-                        width: 180, height: 43
+                    hamburger_btn = <View> {
+                        width: 32, height: 32
+                        margin: {right: 10}
+                        align: {x: 0.5, y: 0.5}
+                        cursor: Hand
+                        event_order: Down
+                        show_bg: true
+                        draw_bg: {
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 5.0);
+                                sdf.fill(#0d7b82);
+                                return sdf.result;
+                            }
+                        }
+
+                        hamburger_icon = <Icon> {
+                            icon_walk: {width: 18, height: 18}
+                            draw_icon: {
+                                svg_file: (ICON_APP)
+                                color: #ffffff
+                            }
+                        }
+                    }
+
+                    logo_light = <View> {
+                        width: Fit, height: 40
+                        align: {y: 0.5}
+                        <Label> {
+                            text: "Studio"
+                            draw_text: {
+                                color: #111c22
+                                text_style: <FONT_SEMIBOLD>{ font_size: 22.0 }
+                            }
+                        }
                     }
 
                     title_label = <Label> {
@@ -687,17 +714,18 @@ live_design! {
 
                     // Sidebar
                     sidebar = <View> {
-                        width: 250, height: Fill
+                        width: 260, height: Fill
                         show_bg: true
                         draw_bg: {
-                            color: #ffffff
+                            color: #eaf6fa
                         }
-                        flow: Down, padding: {top: 12, bottom: 12, left: 10, right: 8}
+                        flow: Down, padding: {top: 16, bottom: 0, left: 16, right: 0}
 
                         // Scrollable area for all sidebar content except Settings
                         sidebar_scroll = <ScrollYView> {
                             width: Fill, height: Fill
                             flow: Down
+                            padding: {right: 8}
 
                             // New Chat - primary CTA button (accent blue)
                             new_chat_btn = <NewChatButton> {
@@ -708,10 +736,10 @@ live_design! {
                             // CHAT section
                             chat_section_label = <View> {
                                 width: Fill, height: Fit
-                                padding: {top: 4, bottom: 6, left: 12, right: 8}
+                                padding: {top: 4, bottom: 8, left: 0, right: 8}
                                 <Label> {
                                     text: "HISTORY"
-                                    draw_text: { color: (TEXT_MUTED), text_style: <FONT_MEDIUM>{ font_size: 10.0 } }
+                                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 9.5 } }
                                 }
                             }
 
@@ -722,14 +750,14 @@ live_design! {
 
                                 chat_history_btn = <SidebarButton> {
                                     sidebar_label = { text: "Session History" }
-                                    sidebar_icon = { source: (ICON_CHAT) }
+                                    sidebar_icon = { draw_icon: { svg_file: (ICON_CHAT) } }
                                 }
 
                                 // Chat history sublist (collapsible, visible when sidebar expanded)
                                 chat_history_visible = <View> {
                                     width: Fill, height: Fit
                                     flow: Down
-                                    padding: {left: 30, top: 4, bottom: 4}
+                                    padding: {left: 36, top: 2, bottom: 8}
 
                                     chat_item_0 = <ChatListItem> {}
                                     chat_item_1 = <ChatListItem> {}
@@ -738,8 +766,8 @@ live_design! {
                                     // Show More button
                                     show_more_btn = <View> {
                                         width: Fill, height: 30
-                                        margin: {top: 2, right: 6}
-                                        padding: {left: 10, right: 10}
+                                        margin: {top: 0, right: 6}
+                                        padding: {left: 0, right: 10}
                                         align: {y: 0.5}
                                         flow: Right
                                         cursor: Hand
@@ -747,24 +775,21 @@ live_design! {
                                         draw_bg: {
                                             instance hover: 0.0
                                             fn pixel(self) -> vec4 {
-                                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 7.0);
-                                                sdf.fill(mix(#f1f5f9, #e5eaf1, self.hover));
-                                                return sdf.result;
+                                                return #00000000;
                                             }
                                         }
                                         show_more_label = <Label> {
                                             width: Fill
                                             text: "Show More"
                                             draw_text: {
-                                                color: (TEXT_SECONDARY)
+                                                color: #5f7078
                                                 text_style: <FONT_MEDIUM>{ font_size: 11.0 }
                                             }
                                         }
                                         show_more_arrow = <Label> {
                                             text: ">"
                                             draw_text: {
-                                                color: (TEXT_SECONDARY)
+                                                color: #5f7078
                                                 text_style: { font_size: 11.0 }
                                             }
                                         }
@@ -787,36 +812,42 @@ live_design! {
                             // MODELS section
                             models_section_label = <View> {
                                 width: Fill, height: Fit
-                                padding: {top: 12, bottom: 6, left: 12, right: 8}
+                                padding: {top: 8, bottom: 8, left: 0, right: 8}
                                 <Label> {
                                     text: "MODELS"
-                                    draw_text: { color: (TEXT_MUTED), text_style: <FONT_MEDIUM>{ font_size: 10.0 } }
+                                    draw_text: { color: #7c8d94, text_style: <FONT_MEDIUM>{ font_size: 9.5 } }
                                 }
                             }
 
-                            llm_btn   = <SidebarButton> { sidebar_label = { text: "LLM" }   sidebar_icon = { source: (ICON_LLM) } }
-                            vlm_btn   = <SidebarButton> { sidebar_label = { text: "VLM" }   sidebar_icon = { source: (ICON_VLM) } }
-                            asr_btn   = <SidebarButton> { sidebar_label = { text: "ASR" }   sidebar_icon = { source: (ICON_ASR) } }
-                            tts_btn   = <SidebarButton> { sidebar_label = { text: "TTS" }   sidebar_icon = { source: (ICON_TTS) } }
-                            image_btn = <SidebarButton> { sidebar_label = { text: "Image" } sidebar_icon = { source: (ICON_IMAGE) } }
-                            video_btn = <SidebarButton> { sidebar_label = { text: "Video" } sidebar_icon = { source: (ICON_VIDEO) } }
+                            llm_btn   = <SidebarButton> { sidebar_label = { text: "LLM" }   sidebar_icon = { draw_icon: { svg_file: (ICON_LLM) } } }
+                            vlm_btn   = <SidebarButton> { sidebar_label = { text: "VLM" }   sidebar_icon = { draw_icon: { svg_file: (ICON_VLM) } } }
+                            asr_btn   = <SidebarButton> { sidebar_label = { text: "ASR" }   sidebar_icon = { draw_icon: { svg_file: (ICON_ASR) } } }
+                            tts_btn   = <SidebarButton> { sidebar_label = { text: "TTS" }   sidebar_icon = { draw_icon: { svg_file: (ICON_TTS) } } }
+                            image_btn = <SidebarButton> { sidebar_label = { text: "Image" } sidebar_icon = { draw_icon: { svg_file: (ICON_IMAGE) } } }
+                            video_btn = <SidebarButton> { sidebar_label = { text: "Video" } sidebar_icon = { draw_icon: { svg_file: (ICON_VIDEO) } } }
 
-                            settings_btn = <SidebarButton> {
-                                sidebar_label = { text: "Settings" }
-                                sidebar_icon = { source: (ICON_SETTINGS) }
-                            }
                         }
 
                         // Info button pinned at bottom of sidebar
                         <View> {
                             width: Fill, height: 1
-                            margin: {left: 0, right: 8, top: 8, bottom: 4}
+                            margin: {left: -16, right: 0, top: 8, bottom: 14}
                             show_bg: true
-                            draw_bg: { color: #f1f5f9 }
+                            draw_bg: { color: #c9d8dd }
+                        }
+                        bottom_menu = <View> {
+                            width: Fill, height: Fit
+                            padding: {right: 8, bottom: 10}
+                            flow: Down
+                            settings_btn = <SidebarButton> {
+                                sidebar_label = { text: "Settings" }
+                                sidebar_icon = { draw_icon: { svg_file: (ICON_SETTINGS) } }
+                            }
                         }
                         sidebar_info_btn = <View> {
-                            width: Fill, height: 34
-                            padding: {left: 12, right: 12}
+                            width: Fill, height: 44
+                            padding: {left: 10, right: 12}
+                            margin: {right: 8, bottom: 12}
                             align: {y: 0.5}
                             flow: Right
                             cursor: Hand
@@ -1937,7 +1968,7 @@ impl MatchEvent for App {
         if self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.video_btn)).finger_down(&actions).is_some() {
             self.navigate_to(cx, NavigationTarget::VideoHub);
         }
-        if self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.settings_btn)).finger_down(&actions).is_some() {
+        if self.ui.view(ids!(body.body_layout.content.sidebar.bottom_menu.settings_btn)).finger_down(&actions).is_some() {
             ::log::info!(">>> Settings button clicked! <<<");
             self.navigate_to(cx, NavigationTarget::Settings);
         }
@@ -2680,7 +2711,7 @@ impl App {
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.video_btn)).apply_over(cx, live! {
             draw_bg: { selected: (if target == NavigationTarget::VideoHub { 1.0 } else { 0.0 }) }
         });
-        self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.settings_btn)).apply_over(cx, live! {
+        self.ui.view(ids!(body.body_layout.content.sidebar.bottom_menu.settings_btn)).apply_over(cx, live! {
             draw_bg: { selected: (if target == NavigationTarget::Settings { 1.0 } else { 0.0 }) }
         });
 
@@ -2689,7 +2720,7 @@ impl App {
 
     fn update_sidebar(&mut self, cx: &mut Cx) {
         let expanded = self.store.is_sidebar_expanded();
-        let width = if expanded { 250.0 } else { 60.0 };
+        let width = if expanded { 260.0 } else { 60.0 };
 
         self.ui.view(ids!(body.body_layout.content.sidebar)).apply_over(cx, live! {
             width: (width)
