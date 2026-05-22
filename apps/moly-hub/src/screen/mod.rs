@@ -840,7 +840,7 @@ impl ModelHubApp {
 
         let dot      = combined_dot_value(dl, load);
         let st_label = combined_status_label(dl, load);
-        let status_text = if show_download_btn { "" } else { st_label };
+        let status_text = st_label;
         let name     = model.name.clone();
         let desc     = model.description.clone();
         let size     = model.storage.size_display.clone();
@@ -889,6 +889,9 @@ impl ModelHubApp {
         // Disable Load button if another model is blocking
         let show_load = show_load && blocker_name.is_none();
         let show_action_row = show_can;
+        // Show round X cancel only while a remove confirmation is pending on this model
+        let show_remove_cancel = show_rm
+            && self.pending_remove_id.as_deref() == Some(model_id);
         let show_runtime_row = show_load || show_unload || show_loading || show_chat || show_rm;
 
         // ids!() is compile-time — each panel's paths must be written explicitly.
@@ -906,6 +909,7 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
+                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_remove_cancel_btn)).set_visible(cx, show_remove_cancel);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
@@ -938,6 +942,7 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
+                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_remove_cancel_btn)).set_visible(cx, show_remove_cancel);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
@@ -970,6 +975,7 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
+                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_remove_cancel_btn)).set_visible(cx, show_remove_cancel);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
@@ -1001,6 +1007,7 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
+                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_remove_cancel_btn)).set_visible(cx, show_remove_cancel);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
@@ -1032,6 +1039,7 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
+                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_remove_cancel_btn)).set_visible(cx, show_remove_cancel);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
@@ -1063,6 +1071,7 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
+                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_remove_cancel_btn)).set_visible(cx, show_remove_cancel);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
@@ -1094,6 +1103,7 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_action_row)).set_visible(cx, show_action_row);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_cancel_btn)).set_visible(cx, show_can);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_remove_btn)).set_visible(cx, show_rm);
+                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_remove_cancel_btn)).set_visible(cx, show_remove_cancel);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_progress_section)).set_visible(cx, show_prog);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
@@ -1203,6 +1213,24 @@ impl ModelHubApp {
             ActivePanel::Voice | ActivePanel::Info | ActivePanel::None => return,
         };
 
+        // Round X button next to Remove: clears the pending confirmation
+        let remove_cancel_clicked = match self.active_panel {
+            ActivePanel::Llm       => self.view.view(ids!(hub_llm_panel.hub_panel_header.panel_remove_cancel_btn)).finger_down(actions).is_some(),
+            ActivePanel::Vlm       => self.view.view(ids!(hub_vlm_panel.hub_panel_header.panel_remove_cancel_btn)).finger_down(actions).is_some(),
+            ActivePanel::Asr       => self.view.view(ids!(hub_asr_panel.hub_panel_header.panel_remove_cancel_btn)).finger_down(actions).is_some(),
+            ActivePanel::Tts       => self.view.view(ids!(hub_tts_panel.hub_panel_header.panel_remove_cancel_btn)).finger_down(actions).is_some(),
+            ActivePanel::Image     => self.view.view(ids!(hub_image_panel.hub_panel_header.panel_remove_cancel_btn)).finger_down(actions).is_some(),
+            ActivePanel::ImageEdit => self.view.view(ids!(hub_image_edit_panel.hub_panel_header.panel_remove_cancel_btn)).finger_down(actions).is_some(),
+            ActivePanel::Video     => self.view.view(ids!(hub_video_panel.hub_panel_header.panel_remove_cancel_btn)).finger_down(actions).is_some(),
+            _ => false,
+        };
+        if remove_cancel_clicked {
+            self.reset_remove_confirmation(cx);
+            self.refresh_header_for(cx, &sel);
+            self.view.redraw(cx);
+            return;
+        }
+
         if dl { self.start_download(cx, &sel); }
         if cancel {
             if let Some(ds) = self.download_states.get(&sel) {
@@ -1226,9 +1254,10 @@ impl ModelHubApp {
                     }
                 }
             } else {
-                // First click: show confirmation
+                // First click: show confirmation + reveal the round X cancel button
                 self.pending_remove_id = Some(sel.clone());
                 self.set_remove_btn_text(cx, "Are you sure?");
+                self.refresh_header_for(cx, &sel);
                 self.view.redraw(cx);
             }
         }
