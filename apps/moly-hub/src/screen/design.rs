@@ -564,7 +564,7 @@ live_design! {
         }
     }
 
-    // Demo: bg-surface-container-highest/30 + dashed outline-variant border + rounded-2xl, min-h 160
+    // Solid bordered card matching the System Prompt / User Message cards.
     HubPanelOutput = <View> {
         width: Fill, height: Fit
         padding: {left: 28, right: 28, top: 28, bottom: 28}
@@ -575,26 +575,9 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
-                // Light neutral background, slightly distinct from the workspace
-                sdf.fill_keep(#fafbfc);
-                // Dashed border: parametrize around the rounded-rect perimeter
-                let half = self.rect_size * 0.5;
-                let p = self.pos * self.rect_size;
-                let q = abs(p - half) - (half - vec2(8.0));
-                // Distance to rounded outline (positive outside corner radius region)
-                let corner = length(max(q, vec2(0.0))) - 6.5;
-                // Estimate angle around the box (used for dash phase)
-                let dx = p.x - half.x;
-                let dy = p.y - half.y;
-                let angle = atan(dy, dx);
-                // ~22 dashes around the perimeter
-                let dash = step(0.5, fract(angle * (11.0 / 3.14159)));
-                let stroke_w = 1.2;
-                let on_edge = 1.0 - smoothstep(stroke_w - 0.5, stroke_w + 0.5, abs(corner));
-                let alpha = on_edge * dash;
-                let border_col = vec4(0.737, 0.788, 0.792, 1.0);
-                let bg_col = vec4(0.980, 0.984, 0.988, 1.0);
-                return mix(bg_col, border_col, alpha);
+                sdf.fill_keep(#ffffff);
+                sdf.stroke(#bcc9ca, 1.0);
+                return sdf.result;
             }
         }
 
@@ -668,7 +651,7 @@ live_design! {
 
     // Demo: bg-surface border border-outline-variant p-4 rounded-xl flex items-center gap-4
     HubStatCard = <View> {
-        width: Fill, height: Fit
+        width: Fill, height: 120
         padding: {left: 14, right: 14, top: 10, bottom: 10}
         margin: {right: 12}
         flow: Right
@@ -770,11 +753,13 @@ live_design! {
     }
 
     HubStatCardValue = <Label> {
-        margin: {top: 0}
+        width: Fill, height: Fit
+        margin: {top: -4}
         // Demo: font-bold text-on-surface
         draw_text: {
             color: #131d21
-            text_style: <FONT_BOLD>{ font_size: 14.0 }
+            text_style: <FONT_BOLD>{ font_size: 12.5 }
+            wrap: Word
         }
     }
 
@@ -824,7 +809,13 @@ live_design! {
                         text: "Cancel"
                         visible: false
                         draw_bg: { danger: 1.0 }
-                        draw_text: { color: #b91c1c }
+                        draw_text: {
+                            color: #b91c1c
+                            color_hover: #b91c1c
+                            color_down: #b91c1c
+                            color_focus: #b91c1c
+                            color_disabled: #b91c1c
+                        }
                     }
                 }
                 panel_runtime_row = <View> {
@@ -847,6 +838,45 @@ live_design! {
                             color_down: #b91c1c
                             color_focus: #b91c1c
                             color_disabled: #b91c1c
+                        }
+                    }
+                    // Round X button shown only while a remove confirmation is pending
+                    panel_remove_cancel_btn = <View> {
+                        width: 32, height: 32
+                        cursor: Hand
+                        visible: false
+                        margin: {right: 12}
+                        align: {x: 0.5, y: 0.5}
+                        show_bg: true
+                        animator: {
+                            hover = {
+                                default: off
+                                off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
+                                on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                        }
+                        draw_bg: {
+                            instance hover: 0.0
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                let cx = self.rect_size.x * 0.5;
+                                let cy = self.rect_size.y * 0.5;
+                                let r = min(cx, cy) - 0.5;
+                                sdf.circle(cx, cy, r);
+                                let base = #ffffff;
+                                let hover_col = #f5e9e9;
+                                sdf.fill_keep(mix(base, hover_col, self.hover));
+                                sdf.stroke(#b91c1c, 1.2);
+                                // X mark
+                                let arm = 5.0;
+                                sdf.move_to(cx - arm, cy - arm);
+                                sdf.line_to(cx + arm, cy + arm);
+                                sdf.stroke(#b91c1c, 1.4);
+                                sdf.move_to(cx + arm, cy - arm);
+                                sdf.line_to(cx - arm, cy + arm);
+                                sdf.stroke(#b91c1c, 1.4);
+                                return sdf.result;
+                            }
                         }
                     }
                     panel_unload_btn = <HubActionButton> {
