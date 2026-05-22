@@ -78,7 +78,7 @@ impl ModelUiState {
         match self {
             Self::NotDownloaded => "Not Downloaded",
             Self::Downloading   => "Downloading...",
-            Self::Downloaded    => "Downloaded",
+            Self::Downloaded    => "Ready",
             Self::Error         => "Error",
         }
     }
@@ -852,7 +852,7 @@ impl ModelHubApp {
         } else if load == ModelLoadState::LoadError {
             "Load failed. Check logs — ominix-api may be missing or model files incomplete.".to_string()
         } else if show_load {
-            "Ready to load into memory.".to_string()
+            String::new()
         } else if is_image_edit && is_done {
             "Ready for image editing.".to_string()
         } else {
