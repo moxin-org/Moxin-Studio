@@ -118,15 +118,14 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 // Demo: rounded-xl (12px); hover:bg-surface-container-high #dfeaef;
-                // selected: bg-primary-container/10 + border border-primary/20
+                // selected: bg-primary-container/10 + border border-primary
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
                 let hover_col = #dfeaef;
-                // primary-container #22a6b3 at 10% on surface #f1fbff ≈ #d8edf0
                 let selected_bg = #d8edf0;
                 let base = #00000000;
-                sdf.fill(mix(mix(base, hover_col, self.hover), selected_bg, self.selected));
-                // border primary at 20% alpha
-                sdf.stroke(vec4(0.0, 0.412, 0.447, self.selected * 0.35), 1.0);
+                sdf.fill_keep(mix(mix(base, hover_col, self.hover), selected_bg, self.selected));
+                // Full-opacity primary border when selected (faint otherwise)
+                sdf.stroke(vec4(0.0, 0.412, 0.447, self.selected), 1.0);
                 return sdf.result;
             }
         }
@@ -251,6 +250,7 @@ live_design! {
             instance purple: 0.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                // Makepad sdf.box doubles r internally; h*0.25 ⇒ true pill
                 let r = self.rect_size.y * 0.25;
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, r);
                 // Demo: primary-container teal
@@ -261,9 +261,9 @@ live_design! {
                 // Danger (Remove): transparent fill with 5% error tint on hover
                 let danger_fill = mix(#00000000, #ba1a1a0d, self.hover);
                 let color = mix(primary, danger_fill, self.danger);
-                sdf.fill(mix(color, color * 0.95, self.pressed));
+                sdf.fill_keep(mix(color, color * 0.95, self.pressed));
                 // Border for danger only
-                sdf.stroke(vec4(0.729, 0.102, 0.102, self.danger), 1.4);
+                sdf.stroke(vec4(0.729, 0.102, 0.102, self.danger), 1.2);
                 return sdf.result;
             }
         }
@@ -393,19 +393,38 @@ live_design! {
             draw_bg: {
                 fn pixel(self) -> vec4 {
                     let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                    let cx = 9.0;
-                    let cy = 9.0;
-                    // 4-pointed sparkle, on-primary-container color #00353a
-                    sdf.move_to(cx, cy - 7.0);
-                    sdf.line_to(cx + 1.6, cy - 1.6);
-                    sdf.line_to(cx + 7.0, cy);
-                    sdf.line_to(cx + 1.6, cy + 1.6);
-                    sdf.line_to(cx, cy + 7.0);
-                    sdf.line_to(cx - 1.6, cy + 1.6);
-                    sdf.line_to(cx - 7.0, cy);
-                    sdf.line_to(cx - 1.6, cy - 1.6);
+                    let main_cx = 8.0;
+                    let main_cy = 10.0;
+                    // Main 4-point sparkle drawn as two overlapping diamonds
+                    // Vertical narrow diamond
+                    sdf.move_to(main_cx, main_cy - 7.0);
+                    sdf.line_to(main_cx + 1.6, main_cy);
+                    sdf.line_to(main_cx, main_cy + 7.0);
+                    sdf.line_to(main_cx - 1.6, main_cy);
                     sdf.close_path();
-                    sdf.fill(#00353a);
+                    sdf.fill(#ffffff);
+                    // Horizontal narrow diamond
+                    sdf.move_to(main_cx - 7.0, main_cy);
+                    sdf.line_to(main_cx, main_cy - 1.6);
+                    sdf.line_to(main_cx + 7.0, main_cy);
+                    sdf.line_to(main_cx, main_cy + 1.6);
+                    sdf.close_path();
+                    sdf.fill(#ffffff);
+                    // Accent sparkle (upper-right, smaller)
+                    let ax = 14.0;
+                    let ay = 4.5;
+                    sdf.move_to(ax, ay - 3.0);
+                    sdf.line_to(ax + 0.8, ay);
+                    sdf.line_to(ax, ay + 3.0);
+                    sdf.line_to(ax - 0.8, ay);
+                    sdf.close_path();
+                    sdf.fill(#ffffff);
+                    sdf.move_to(ax - 3.0, ay);
+                    sdf.line_to(ax, ay - 0.8);
+                    sdf.line_to(ax + 3.0, ay);
+                    sdf.line_to(ax, ay + 0.8);
+                    sdf.close_path();
+                    sdf.fill(#ffffff);
                     return sdf.result;
                 }
             }
@@ -413,7 +432,7 @@ live_design! {
         generate_label = <Label> {
             text: "Generate"
             draw_text: {
-                color: #00353a
+                color: #ffffff
                 text_style: <FONT_BOLD>{ font_size: 13.5 }
             }
         }
@@ -480,13 +499,13 @@ live_design! {
     HubLabeledCard = <View> {
         width: Fill, height: Fit
         flow: Down
-        margin: {bottom: 16}
+        margin: {bottom: 14}
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
-                sdf.fill(#ffffff);
+                sdf.fill_keep(#ffffff);
                 sdf.stroke(#bcc9ca, 1.0);
                 return sdf.result;
             }
@@ -556,19 +575,26 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
-                // Fill: white background to match other cards
-                sdf.fill(#ffffff);
-                // Dashed border simulated by stroking with antialiased dash pattern
-                let half_p = self.rect_size * 0.5;
-                let pos = self.pos * self.rect_size;
-                let edge = abs(pos - half_p) - (half_p - 1.5);
-                let edge_d = max(edge.x, edge.y);
-                let on_edge = 1.0 - smoothstep(0.0, 1.0, abs(edge_d));
-                // 8px dash, 6px gap pattern along the perimeter (use x+y as crude param)
-                let t = (pos.x + pos.y) * (1.0 / 14.0);
-                let dash = step(0.5, fract(t));
-                let dash_col = vec4(0.737, 0.788, 0.792, on_edge * dash);
-                return mix(vec4(1.0, 1.0, 1.0, 1.0), dash_col, dash_col.w);
+                // Light neutral background, slightly distinct from the workspace
+                sdf.fill_keep(#fafbfc);
+                // Dashed border: parametrize around the rounded-rect perimeter
+                let half = self.rect_size * 0.5;
+                let p = self.pos * self.rect_size;
+                let q = abs(p - half) - (half - vec2(8.0));
+                // Distance to rounded outline (positive outside corner radius region)
+                let corner = length(max(q, vec2(0.0))) - 6.5;
+                // Estimate angle around the box (used for dash phase)
+                let dx = p.x - half.x;
+                let dy = p.y - half.y;
+                let angle = atan(dy, dx);
+                // ~22 dashes around the perimeter
+                let dash = step(0.5, fract(angle * (11.0 / 3.14159)));
+                let stroke_w = 1.2;
+                let on_edge = 1.0 - smoothstep(stroke_w - 0.5, stroke_w + 0.5, abs(corner));
+                let alpha = on_edge * dash;
+                let border_col = vec4(0.737, 0.788, 0.792, 1.0);
+                let bg_col = vec4(0.980, 0.984, 0.988, 1.0);
+                return mix(bg_col, border_col, alpha);
             }
         }
 
@@ -588,17 +614,19 @@ live_design! {
                         let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                         let cx = 22.0;
                         let cy = 22.0;
-                        // Faint 4-point sparkle (on-surface-variant/30 ≈ #3d494a4d)
+                        // 4-point sparkle drawn as two crossed diamonds (renders cleanly)
                         sdf.move_to(cx, cy - 16.0);
-                        sdf.line_to(cx + 3.8, cy - 3.8);
-                        sdf.line_to(cx + 16.0, cy);
-                        sdf.line_to(cx + 3.8, cy + 3.8);
+                        sdf.line_to(cx + 3.2, cy);
                         sdf.line_to(cx, cy + 16.0);
-                        sdf.line_to(cx - 3.8, cy + 3.8);
-                        sdf.line_to(cx - 16.0, cy);
-                        sdf.line_to(cx - 3.8, cy - 3.8);
+                        sdf.line_to(cx - 3.2, cy);
                         sdf.close_path();
-                        sdf.fill(#3d494a4d);
+                        sdf.fill(#3d494a66);
+                        sdf.move_to(cx - 16.0, cy);
+                        sdf.line_to(cx, cy - 3.2);
+                        sdf.line_to(cx + 16.0, cy);
+                        sdf.line_to(cx, cy + 3.2);
+                        sdf.close_path();
+                        sdf.fill(#3d494a66);
                         return sdf.result;
                     }
                 }
@@ -641,17 +669,17 @@ live_design! {
     // Demo: bg-surface border border-outline-variant p-4 rounded-xl flex items-center gap-4
     HubStatCard = <View> {
         width: Fill, height: Fit
-        padding: {left: 16, right: 16, top: 14, bottom: 14}
-        margin: {right: 16}
+        padding: {left: 14, right: 14, top: 10, bottom: 10}
+        margin: {right: 12}
         flow: Right
         align: {y: 0.5}
-        spacing: 14
+        spacing: 12
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
-                sdf.fill(#ffffff);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 8.0);
+                sdf.fill_keep(#ffffff);
                 sdf.stroke(#bcc9ca, 1.0);
                 return sdf.result;
             }
@@ -742,7 +770,7 @@ live_design! {
     }
 
     HubStatCardValue = <Label> {
-        margin: {top: 4}
+        margin: {top: 0}
         // Demo: font-bold text-on-surface
         draw_text: {
             color: #131d21
@@ -754,12 +782,12 @@ live_design! {
     HubPanelHeader = <View> {
         width: Fill, height: Fit
         flow: Down
-        padding: {left: 16, right: 16, top: 16, bottom: 16}
+        padding: {left: 16, right: 16, top: 16, bottom: 6}
 
         <View> {
             width: Fill, height: Fit
             flow: Right
-            margin: {bottom: 16}
+            margin: {bottom: 14}
 
             <View> {
                 width: Fill, height: Fit
@@ -775,10 +803,10 @@ live_design! {
                 // Demo: text-on-surface-variant/80 font-body-md max-w-lg
                 panel_model_desc = <Label> {
                     width: Fill, height: Fit
-                    margin: {top: 8}
+                    margin: {top: 2}
                     draw_text: {
                         fn get_color(self) -> vec4 { return #3d494acc; }
-                        text_style: { font_size: 14.0 }
+                        text_style: { font_size: 13.0 }
                         wrap: Word
                     }
                 }
@@ -813,7 +841,13 @@ live_design! {
                         text: "Remove"
                         visible: false
                         draw_bg: { danger: 1.0 }
-                        draw_text: { color: #b91c1c }
+                        draw_text: {
+                            color: #b91c1c
+                            color_hover: #b91c1c
+                            color_down: #b91c1c
+                            color_focus: #b91c1c
+                            color_disabled: #b91c1c
+                        }
                     }
                     panel_unload_btn = <HubActionButton> {
                         text: "Unload"
@@ -842,7 +876,7 @@ live_design! {
         <View> {
             width: Fill, height: Fit
             flow: Right
-            margin: {bottom: 16}
+            margin: {bottom: 6}
 
             // STATUS — green check
             <HubStatCard> {
@@ -1272,7 +1306,7 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 16, right: 16, top: 8, bottom: 28}
+                    padding: {left: 16, right: 16, top: 0, bottom: 28}
 
                     // ── SYSTEM PROMPT card ──
                     llm_system_card = <HubLabeledCard> {
@@ -1320,7 +1354,7 @@ live_design! {
 
                     // ── RESPONSE section (label above + dashed-border placeholder box) ──
                     <Label> {
-                        margin: {top: 12, bottom: 10, left: 6}
+                        margin: {top: 8, bottom: 8, left: 0}
                         text: "RESPONSE"
                         draw_text: {
                             color: #3d494a
