@@ -117,9 +117,9 @@ live_design! {
     // Note: Button's draw_bg/draw_text/draw_icon don't support custom instance variables,
     // so we use fixed colors for light mode. Theme switching can be done by swapping button styles.
     SidebarButton = <View> {
-        width: Fill, height: 48
-        padding: {top: 0, bottom: 0, left: 18, right: 12}
-        margin: {bottom: 4}
+        width: Fill, height: 42
+        padding: {top: 0, bottom: 0, left: 12, right: 10}
+        margin: {bottom: 2}
         flow: Right
         align: {x: 0.0, y: 0.5}
         cursor: Hand
@@ -153,8 +153,8 @@ live_design! {
         }
 
         sidebar_icon = <Image> {
-            width: 20, height: 20
-            margin: {right: 14}
+            width: 18, height: 18
+            margin: {right: 8}
         }
         sidebar_label = <Label> {
             draw_text: {
@@ -230,14 +230,14 @@ live_design! {
             icon_walk: {width: 18, height: 18, margin: {right: 10}}
             draw_icon: {
                 svg_file: (ICON_NEW_CHAT)
-                color: #00353a
+                color: #ffffff
             }
         }
         new_chat_label = <Label> {
             text: "New Session"
             draw_text: {
                 text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
-                color: #00353a
+                color: #ffffff
             }
         }
     }
@@ -504,22 +504,23 @@ live_design! {
                     // ── Model Selector pill (center of header, like LM Studio) ──
                     // Demo: bg-surface-container rounded-full px-4 py-1.5 border border-outline-variant/30
                     model_selector_btn = <View> {
-                        width: Fit, height: 32
+                        width: Fit, height: 36
                         cursor: Hand
                         align: {x: 0.5, y: 0.5}
-                        padding: {left: 16, right: 12, top: 0, bottom: 0}
+                        padding: {left: 12, right: 10, top: 0, bottom: 0}
                         margin: {right: 4}
                         show_bg: true
                         draw_bg: {
                             instance hover: 0.0
                             fn pixel(self) -> vec4 {
                                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                // Makepad sdf.box doubles r internally; h*0.25 ⇒ true pill
                                 let r = self.rect_size.y * 0.25;
                                 sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, r);
                                 let base = #e4f0f4;
                                 let hover_col = #dfeaef;
-                                sdf.fill(mix(base, hover_col, self.hover));
-                                sdf.stroke(#bcc9ca80, 1.0);
+                                sdf.fill_keep(mix(base, hover_col, self.hover));
+                                sdf.stroke(#9aabae, 1.0);
                                 return sdf.result;
                             }
                         }
@@ -732,18 +733,18 @@ live_design! {
 
                     // Sidebar
                     sidebar = <View> {
-                        width: 260, height: Fill
+                        width: 248, height: Fill
                         show_bg: true
                         draw_bg: {
                             color: #f3f5f9
                         }
-                        flow: Down, padding: {top: 16, bottom: 0, left: 16, right: 0}
+                        flow: Down, padding: {top: 16, bottom: 0, left: 8, right: 0}
 
                         // Scrollable area for all sidebar content except Settings
                         sidebar_scroll = <ScrollYView> {
                             width: Fill, height: Fill
                             flow: Down
-                            padding: {right: 8}
+                            padding: {right: 4}
 
                             // New Chat - primary CTA button (accent blue)
                             new_chat_btn = <NewChatButton> {}
@@ -799,13 +800,6 @@ live_design! {
                                             draw_text: {
                                                 color: #5f7078
                                                 text_style: <FONT_MEDIUM>{ font_size: 11.0 }
-                                            }
-                                        }
-                                        show_more_arrow = <Label> {
-                                            text: ">"
-                                            draw_text: {
-                                                color: #5f7078
-                                                text_style: { font_size: 11.0 }
                                             }
                                         }
                                     }
@@ -864,9 +858,9 @@ live_design! {
 
                         // About button - same visual weight as Settings, with SDF-drawn info icon
                         sidebar_info_btn = <View> {
-                            width: Fill, height: 48
-                            padding: {top: 0, bottom: 0, left: 18, right: 12}
-                            margin: {right: 8, bottom: 14}
+                            width: Fill, height: 42
+                            padding: {top: 0, bottom: 0, left: 12, right: 10}
+                            margin: {right: 4, bottom: 10}
                             flow: Right
                             align: {x: 0.0, y: 0.5}
                             cursor: Hand
@@ -895,7 +889,7 @@ live_design! {
                             // Info icon - circle with "i" inside, same color as Settings icon
                             <View> {
                                 width: 20, height: 20
-                                margin: {right: 14}
+                                margin: {right: 8}
                                 show_bg: true
                                 draw_bg: {
                                     fn pixel(self) -> vec4 {
@@ -2864,14 +2858,9 @@ impl App {
         // Update "Show More" section visibility
         self.ui.view(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.chat_history_more)).set_visible(cx, self.chat_history_expanded);
 
-        // Update "Show More" button text and arrow
-        let (text, arrow) = if self.chat_history_expanded {
-            ("Show Less", "v")
-        } else {
-            ("Show More", ">")
-        };
+        // Update "Show More" button text
+        let text = if self.chat_history_expanded { "Show Less" } else { "Show More" };
         self.ui.label(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.chat_history_visible.show_more_label)).set_text(cx, text);
-        self.ui.label(ids!(body.body_layout.content.sidebar.sidebar_scroll.chat_section.chat_history_visible.show_more_arrow)).set_text(cx, arrow);
 
         self.ui.redraw(cx);
     }
