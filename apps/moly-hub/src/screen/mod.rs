@@ -2,6 +2,7 @@
 pub mod design;
 
 use makepad_widgets::*;
+use makepad_widgets::image_cache::ImageError;
 use moly_data::{
     ModelRegistry, RegistryModel, RegistryCategory, SourceKind, PanelType,
     ModelRuntimeClient, ServerModelInfo, ServerModelStatus,
@@ -470,9 +471,7 @@ impl Widget for ModelHubApp {
                         let lower = path.to_lowercase();
                         if lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")
                             || lower.ends_with(".bmp") || lower.ends_with(".gif") || lower.ends_with(".webp") {
-                            self.vlm_state.image_path = path.clone();
-                            self.view.text_input(ids!(hub_vlm_panel.vlm_image_path)).set_text(cx, path);
-                            self.view.redraw(cx);
+                            self.set_vlm_image_path(cx, path.clone());
                             break;
                         }
                     }
@@ -1359,7 +1358,6 @@ impl ModelHubApp {
     fn handle_input_changes(&mut self, actions: &Actions) {
         if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_system_card.card_body.llm_system)).changed(actions)       { self.llm_state.system = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_user_card.card_body.llm_user)).changed(actions)         { self.llm_state.user = t.to_string(); }
-        if let Some(t) = self.view.text_input(ids!(hub_vlm_panel.vlm_image_path)).changed(actions)   { self.vlm_state.image_path = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_vlm_panel.vlm_user)).changed(actions)         { self.vlm_state.user = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_asr_panel.asr_audio_path)).changed(actions)   { self.asr_state.audio_path = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_tts_panel.tts_text_input)).changed(actions)   { self.tts_state.text = t.to_string(); }
@@ -1380,16 +1378,15 @@ impl ModelHubApp {
         }
     }
     fn handle_vlm_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        if self.view.button(ids!(hub_vlm_panel.vlm_browse_btn)).clicked(actions) {
-            if let Some(path) = FileDialog::new()
-                .add_filter("Image", &["jpg", "jpeg", "png", "bmp", "gif", "webp"])
-                .pick_file()
-            {
-                let s = path.to_string_lossy().to_string();
-                self.vlm_state.image_path = s.clone();
-                self.view.text_input(ids!(hub_vlm_panel.vlm_image_path)).set_text(cx, &s);
-                self.view.redraw(cx);
-            }
+        let fullscreen_clicked = self.view.view(ids!(hub_vlm_panel.vlm_drop_zone.vlm_preview_fullscreen_btn)).finger_down(actions).is_some();
+        if fullscreen_clicked {
+            self.open_vlm_fullscreen_preview(cx);
+        } else if self.view.view(ids!(hub_vlm_panel.vlm_drop_zone)).finger_down(actions).is_some() {
+            self.pick_vlm_image_file(cx);
+        }
+        if self.view.button(ids!(vlm_fullscreen_overlay.vlm_fullscreen_close_btn)).clicked(actions) {
+            self.view.view(ids!(vlm_fullscreen_overlay)).set_visible(cx, false);
+            self.view.redraw(cx);
         }
         if self.view.button(ids!(hub_vlm_panel.vlm_generate_btn)).clicked(actions) {
             if let Some(sel) = self.selected_id.clone() {
@@ -1397,6 +1394,61 @@ impl ModelHubApp {
                 let user = self.vlm_state.user.clone();
                 self.call_vlm(cx, sel, img, user);
             }
+        }
+    }
+
+    fn pick_vlm_image_file(&mut self, cx: &mut Cx) {
+        if let Some(path) = FileDialog::new()
+            .add_filter("Image", &["jpg", "jpeg", "png", "bmp", "gif", "webp"])
+            .pick_file()
+        {
+            self.set_vlm_image_path(cx, path.to_string_lossy().to_string());
+        }
+    }
+
+    fn set_vlm_image_path(&mut self, cx: &mut Cx, path: String) {
+        let display = Path::new(&path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or(path.as_str())
+            .to_string();
+        let preview_ref = self.view.image(ids!(hub_vlm_panel.vlm_image_preview));
+        let preview_loaded = Self::load_vlm_image_preview(cx, &preview_ref, &path).is_ok();
+        self.vlm_state.image_path = path;
+        preview_ref.set_visible(cx, preview_loaded);
+        self.view.view(ids!(hub_vlm_panel.vlm_drop_zone.vlm_preview_fullscreen_btn)).set_visible(cx, preview_loaded);
+        self.view.label(ids!(hub_vlm_panel.vlm_drop_label)).set_visible(cx, !preview_loaded);
+        if !preview_loaded {
+            self.view.label(ids!(hub_vlm_panel.vlm_drop_label)).set_text(cx, &display);
+        } else {
+            self.view.label(ids!(hub_vlm_panel.vlm_drop_label)).set_text(cx, "");
+        }
+        self.view.redraw(cx);
+    }
+
+    fn open_vlm_fullscreen_preview(&mut self, cx: &mut Cx) {
+        if self.vlm_state.image_path.is_empty() {
+            return;
+        }
+        let image_ref = self.view.image(ids!(vlm_fullscreen_overlay.vlm_fullscreen_image));
+        if Self::load_vlm_image_preview(cx, &image_ref, &self.vlm_state.image_path).is_ok() {
+            self.view.view(ids!(vlm_fullscreen_overlay)).set_visible(cx, true);
+            self.view.redraw(cx);
+        }
+    }
+
+    fn load_vlm_image_preview(cx: &mut Cx, preview_ref: &ImageRef, path: &str) -> Result<(), ImageError> {
+        let lower = path.to_lowercase();
+        if lower.ends_with(".jpg") || lower.ends_with(".jpeg") {
+            std::fs::read(path)
+                .map_err(|_| ImageError::PathNotFound(path.into()))
+                .and_then(|bytes| preview_ref.load_jpg_from_data(cx, &bytes))
+        } else if lower.ends_with(".png") {
+            std::fs::read(path)
+                .map_err(|_| ImageError::PathNotFound(path.into()))
+                .and_then(|bytes| preview_ref.load_png_from_data(cx, &bytes))
+        } else {
+            preview_ref.load_image_file_by_path(cx, Path::new(path))
         }
     }
     fn handle_asr_actions(&mut self, cx: &mut Cx, actions: &Actions) {

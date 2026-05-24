@@ -1444,8 +1444,12 @@ live_design! {
 
                     // Drag-and-drop zone for image files from Finder
                     vlm_drop_zone = <View> {
-                        width: Fill, height: 56
-                        margin: {bottom: 6}
+                        width: Fill, height: 132
+                        margin: {bottom: 14}
+                        padding: {left: 12, right: 12, top: 12, bottom: 12}
+                        flow: Overlay
+                        cursor: Hand
+                        event_order: Down
                         show_bg: true
                         draw_bg: {
                             instance drag_over: 0.0
@@ -1462,25 +1466,55 @@ live_design! {
                         }
                         align: {x: 0.5, y: 0.5}
 
+                        vlm_image_preview = <Image> {
+                            width: Fill, height: Fill
+                            visible: false
+                            fit: Smallest
+                        }
+
                         vlm_drop_label = <Label> {
-                            text: "Drop image here"
+                            text: "Click or drag file to this area"
                             draw_text: {
                                 color: #9ca3af
                                 text_style: { font_size: 12.0 }
                             }
                         }
-                    }
 
-                    <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        align: {y: 0.5}
-                        margin: {bottom: 4}
-                        vlm_image_path = <HubPanelInput> {
-                            width: Fill, height: 36
-                            margin: {right: 6, bottom: 0}
+                        <View> {
+                            width: Fill, height: Fill
+                            align: {x: 1.0, y: 1.0}
+                            vlm_preview_fullscreen_btn = <View> {
+                                width: 52, height: 30
+                                visible: false
+                                cursor: Hand
+                                align: {x: 0.5, y: 0.5}
+                                show_bg: true
+                                draw_bg: {
+                                    instance hover: 0.0
+                                    fn pixel(self) -> vec4 {
+                                        let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                        sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
+                                        sdf.fill_keep(mix(vec4(0.067, 0.094, 0.153, 0.80), vec4(0.067, 0.094, 0.153, 0.93), self.hover));
+                                        sdf.stroke(vec4(1.0, 1.0, 1.0, 0.20), 1.0);
+                                        return sdf.result;
+                                    }
+                                }
+                                animator: {
+                                    hover = {
+                                        default: off
+                                        off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
+                                        on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                                    }
+                                }
+                                <Label> {
+                                    text: "Full"
+                                    draw_text: {
+                                        color: #ffffff
+                                        text_style: <FONT_MEDIUM>{ font_size: 11.0 }
+                                    }
+                                }
+                            }
                         }
-                        vlm_browse_btn = <HubActionButton> { text: "Browse..." margin: {right: 0} }
                     }
 
                     <HubInputLabel> { text: "USER MESSAGE" }
@@ -2004,7 +2038,32 @@ live_design! {
 
                 voice_synth_status = <HubPanelStatus> {}
             }
+            }
+
+            vlm_fullscreen_overlay = <View> {
+                width: Fill, height: Fill
+                visible: false
+                flow: Overlay
+                padding: {left: 28, right: 28, top: 28, bottom: 28}
+                show_bg: true
+                draw_bg: {
+                    fn pixel(self) -> vec4 {
+                        return #000000cc;
+                    }
+                }
+                vlm_fullscreen_image = <Image> {
+                    width: Fill, height: Fill
+                    fit: Smallest
+                }
+                <View> {
+                    width: Fill, height: Fill
+                    align: {x: 1.0, y: 0.0}
+                    vlm_fullscreen_close_btn = <HubActionButton> {
+                        text: "Close"
+                        margin: {right: 0}
+                    }
+                }
+            }
         }
     }
-}
 }
