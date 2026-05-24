@@ -1120,6 +1120,94 @@ live_design! {
         }
     }
 
+    HubTtsVoiceSelectButton = <View> {
+        width: 190, height: 34
+        padding: {left: 12, right: 10}
+        flow: Right
+        align: {x: 0.5, y: 0.5}
+        spacing: 8
+        cursor: Hand
+        event_order: Down
+        show_bg: true
+        draw_bg: {
+            instance hover: 0.0
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
+                sdf.fill_keep(mix(#ffffff, #f3f4f6, self.hover));
+                sdf.stroke(#bcc9ca, 1.0);
+                return sdf.result;
+            }
+        }
+        animator: {
+            hover = {
+                default: off
+                off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
+                on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+            }
+        }
+        tts_voice_selected_label = <Label> {
+            width: Fill
+            draw_text: {
+                color: #1f2937
+                text_style: <FONT_MEDIUM>{ font_size: 11.5 }
+                wrap: Ellipsis
+            }
+        }
+        tts_voice_chevron = <View> {
+            width: 12, height: 12
+            show_bg: true
+            draw_bg: {
+                fn pixel(self) -> vec4 {
+                    let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                    let cx = self.rect_size.x * 0.5;
+                    let cy = self.rect_size.y * 0.5;
+                    sdf.move_to(cx - 3.5, cy - 1.5);
+                    sdf.line_to(cx, cy + 2.5);
+                    sdf.line_to(cx + 3.5, cy - 1.5);
+                    sdf.stroke(#64748b, 1.6);
+                    return sdf.result;
+                }
+            }
+        }
+    }
+
+    HubTtsVoiceOption = <View> {
+        width: Fill, height: 32
+        padding: {left: 12, right: 12}
+        flow: Right
+        align: {y: 0.5}
+        cursor: Hand
+        event_order: Down
+        show_bg: true
+        draw_bg: {
+            instance hover: 0.0
+            instance selected: 0.0
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, 4.0);
+                let base = mix(#ffffff, #f8fafc, self.hover);
+                sdf.fill(mix(base, #eef2ff, self.selected));
+                return sdf.result;
+            }
+        }
+        animator: {
+            hover = {
+                default: off
+                off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
+                on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+            }
+        }
+        voice_option_label = <Label> {
+            width: Fill
+            draw_text: {
+                color: #1f2937
+                text_style: <FONT_REGULAR>{ font_size: 11.5 }
+                wrap: Ellipsis
+            }
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Main ModelHubApp widget
     // ─────────────────────────────────────────────────────────────────────────
@@ -1438,7 +1526,7 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 0, bottom: 28}
+                    padding: {left: 16, right: 16, top: 0, bottom: 28}
 
                     <HubInputLabel> { text: "IMAGE FILE" margin: {top: 0, bottom: 6} }
 
@@ -1561,7 +1649,7 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 0, bottom: 28}
+                    padding: {left: 16, right: 16, top: 0, bottom: 28}
 
                     <HubInputLabel> { text: "AUDIO FILE" margin: {top: 0, bottom: 6} }
 
@@ -1668,44 +1756,97 @@ live_design! {
 
                 <View> {
                     width: Fill, height: Fit
-                    flow: Down
-                    padding: {left: 30, right: 30, top: 0, bottom: 28}
+                    flow: Overlay
+                    padding: {left: 16, right: 16, top: 0, bottom: 28}
 
-                    <HubInputLabel> { text: "VOICE" margin: {top: 0, bottom: 6} }
-                    tts_voice_list = <PortalList> {
-                        width: Fill, height: 360
+                    tts_content_stack = <View> {
+                        width: Fill, height: Fit
                         flow: Down
-                        HubTtsVoiceItem = <HubTtsVoiceItem> {}
-                    }
 
-                    <HubInputLabel> { text: "TEXT TO SPEAK" }
-                    tts_text_input = <HubPanelInput> {
-                        height: 80
-                        empty_text: "Enter text to synthesize..."
-                    }
+                        // ── TEXT TO SPEAK card with inset Generate button ──
+                        tts_text_card = <HubLabeledCard> {
+                            card_header = {
+                                header_icon = { draw_bg: {
+                                    kind: 1.0
+                                    fg_col: vec4(0.322, 0.251, 0.867, 1.0)  // secondary
+                                } }
+                                header_label = { text: "TEXT TO SPEAK" }
+                                <View> { width: Fill }
+                                tts_voice_select = <HubTtsVoiceSelectButton> {
+                                    tts_voice_selected_label = { text: "Vivian" }
+                                }
+                            }
+                            card_body = {
+                                tts_text_body = <View> {
+                                    width: Fill, height: Fit
+                                    flow: Down
 
-                    <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        margin: {top: 8, bottom: 12}
-                        tts_generate_btn = <HubActionButton> { text: "Generate & Play" }
-                    }
+                                    tts_text_input = <HubCardInput> {
+                                        height: 120
+                                        empty_text: "Enter text to synthesize..."
+                                    }
 
-                    tts_status = <HubPanelStatus> {}
+                                    // Generate button row inside the card body, aligned right
+                                    <View> {
+                                        width: Fill, height: Fit
+                                        flow: Right
+                                        align: {y: 0.5}
+                                        margin: {top: 10}
+                                        <View> { width: Fill }
+                                        tts_generate_btn = <HubGenerateButton> {}
+                                    }
+                                }
+                            }
+                        }
 
-                    // Save + Finder row (hidden until audio is generated)
-                    tts_result_row = <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        align: {y: 0.5}
-                        margin: {top: 8}
-                        visible: false
-                        spacing: 8
+                        tts_status = <HubPanelStatus> {}
 
-                        tts_save_btn = <HubActionButton> { text: "Save to Downloads" }
-                        tts_finder_btn = <HubActionButton> {
-                            text: "Show in Finder"
+                        // Save + Finder row (hidden until audio is generated)
+                        tts_result_row = <View> {
+                            width: Fill, height: Fit
+                            flow: Right
+                            align: {y: 0.5}
+                            margin: {top: 8}
                             visible: false
+                            spacing: 8
+
+                            tts_save_btn = <HubActionButton> { text: "Save to Downloads" }
+                            tts_finder_btn = <HubActionButton> {
+                                text: "Show in Finder"
+                                visible: false
+                            }
+                        }
+                    }
+
+                    tts_voice_menu_layer = <View> {
+                        width: Fill, height: Fit
+                        flow: Right
+                        align: {x: 1.0, y: 0.0}
+                        padding: {top: 52, right: 22}
+                        tts_voice_menu = <View> {
+                            width: 220, height: Fit
+                            visible: false
+                            padding: {left: 4, right: 4, top: 4, bottom: 4}
+                            flow: Down
+                            show_bg: true
+                            draw_bg: {
+                                fn pixel(self) -> vec4 {
+                                    let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                    sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
+                                    sdf.fill_keep(#ffffff);
+                                    sdf.stroke(#bcc9ca, 1.0);
+                                    return sdf.result;
+                                }
+                            }
+                            tts_voice_option_0 = <HubTtsVoiceOption> { voice_option_label = { text: "Vivian" } }
+                            tts_voice_option_1 = <HubTtsVoiceOption> { voice_option_label = { text: "Serena" } }
+                            tts_voice_option_2 = <HubTtsVoiceOption> { voice_option_label = { text: "Ryan" } }
+                            tts_voice_option_3 = <HubTtsVoiceOption> { voice_option_label = { text: "Aiden" } }
+                            tts_voice_option_4 = <HubTtsVoiceOption> { voice_option_label = { text: "English Male" } }
+                            tts_voice_option_5 = <HubTtsVoiceOption> { voice_option_label = { text: "Uncle Fu" } }
+                            tts_voice_option_6 = <HubTtsVoiceOption> { voice_option_label = { text: "Chinese Female" } }
+                            tts_voice_option_7 = <HubTtsVoiceOption> { voice_option_label = { text: "Chinese Male" } }
+                            tts_voice_option_8 = <HubTtsVoiceOption> { voice_option_label = { text: "Dialect" } }
                         }
                     }
                 }
@@ -1722,7 +1863,7 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 0, bottom: 28}
+                    padding: {left: 16, right: 16, top: 0, bottom: 28}
 
                     <HubInputLabel> { text: "PROMPT" margin: {top: 0, bottom: 6} }
                     img_prompt = <HubPanelInput> {
@@ -1790,7 +1931,7 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 0, bottom: 28}
+                    padding: {left: 16, right: 16, top: 0, bottom: 28}
 
                     <HubInputLabel> { text: "REFERENCE IMAGE" margin: {top: 0, bottom: 6} }
 
