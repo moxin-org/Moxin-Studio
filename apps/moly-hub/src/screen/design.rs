@@ -1517,17 +1517,31 @@ live_design! {
                         }
                     }
 
-                    <HubInputLabel> { text: "USER MESSAGE" }
-                    vlm_user = <HubPanelInput> {
-                        height: 48
-                        empty_text: "Describe this image..."
-                    }
+                    // ── USER MESSAGE card with inset Generate button ──
+                    vlm_user_card = <HubLabeledCard> {
+                        card_header = {
+                            header_icon = { draw_bg: {
+                                kind: 1.0
+                                fg_col: vec4(0.322, 0.251, 0.867, 1.0)  // secondary
+                            } }
+                            header_label = { text: "USER MESSAGE" }
+                        }
+                        card_body = {
+                            vlm_user = <HubCardInput> {
+                                height: 120
+                                empty_text: "Describe this image..."
+                            }
 
-                    <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        margin: {top: 8, bottom: 12}
-                        vlm_generate_btn = <HubActionButton> { text: "Generate" }
+                            // Generate button row inside the card body, aligned right
+                            <View> {
+                                width: Fill, height: Fit
+                                flow: Right
+                                align: {y: 0.5}
+                                margin: {top: 10}
+                                <View> { width: Fill }
+                                vlm_generate_btn = <HubGenerateButton> {}
+                            }
+                        }
                     }
 
                     <HubInputLabel> { text: "RESPONSE" }

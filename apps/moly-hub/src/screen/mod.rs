@@ -1358,7 +1358,7 @@ impl ModelHubApp {
     fn handle_input_changes(&mut self, actions: &Actions) {
         if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_system_card.card_body.llm_system)).changed(actions)       { self.llm_state.system = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_user_card.card_body.llm_user)).changed(actions)         { self.llm_state.user = t.to_string(); }
-        if let Some(t) = self.view.text_input(ids!(hub_vlm_panel.vlm_user)).changed(actions)         { self.vlm_state.user = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_vlm_panel.vlm_user_card.card_body.vlm_user)).changed(actions)         { self.vlm_state.user = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_asr_panel.asr_audio_path)).changed(actions)   { self.asr_state.audio_path = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_tts_panel.tts_text_input)).changed(actions)   { self.tts_state.text = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_image_panel.img_prompt)).changed(actions)     { self.image_state.prompt = t.to_string(); }
@@ -1388,7 +1388,7 @@ impl ModelHubApp {
             self.view.view(ids!(vlm_fullscreen_overlay)).set_visible(cx, false);
             self.view.redraw(cx);
         }
-        if self.view.button(ids!(hub_vlm_panel.vlm_generate_btn)).clicked(actions) {
+        if self.view.view(ids!(hub_vlm_panel.vlm_user_card.card_body.vlm_generate_btn)).finger_down(actions).is_some() {
             if let Some(sel) = self.selected_id.clone() {
                 let img  = self.vlm_state.image_path.clone();
                 let user = self.vlm_state.user.clone();
