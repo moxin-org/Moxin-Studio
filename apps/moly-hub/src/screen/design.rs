@@ -269,6 +269,10 @@ live_design! {
         }
         draw_text: {
             color: #ffffff
+            color_hover: #ffffff
+            color_down: #ffffff
+            color_focus: #ffffff
+            color_disabled: #ffffff
             text_style: <FONT_SEMIBOLD>{ font_size: 13.0 }
         }
     }
@@ -767,11 +771,12 @@ live_design! {
     HubPanelHeader = <View> {
         width: Fill, height: Fit
         flow: Down
-        padding: {left: 16, right: 16, top: 16, bottom: 6}
+        padding: {left: 16, right: 30, top: 16, bottom: 6}
 
         <View> {
             width: Fill, height: Fit
             flow: Right
+            align: {y: 0.0}
             margin: {bottom: 14}
 
             <View> {
@@ -801,6 +806,12 @@ live_design! {
                 width: Fit, height: Fit
                 flow: Right
                 align: {y: 0.5}
+                // `spacing` only applies between *visible* children, so the right edge of
+                // whichever sub-row ends up showing sits flush against this Fit container's
+                // right boundary — unlike per-child `margin: right` which leaves a phantom
+                // gap when the bearing sibling is hidden.
+                spacing: 12
+                margin: {right: -27}
                 panel_action_row = <View> {
                     width: Fit, height: Fit
                     flow: Right
@@ -808,6 +819,7 @@ live_design! {
                     panel_cancel_btn = <HubActionButton> {
                         text: "Cancel"
                         visible: false
+                        margin: {right: 0}
                         draw_bg: { danger: 1.0 }
                         draw_text: {
                             color: #b91c1c
@@ -823,29 +835,17 @@ live_design! {
                     flow: Right
                     align: {y: 0.5}
                     visible: false
-                    panel_load_btn = <HubActionButton> {
-                        text: "Load"
-                        visible: false
-                        draw_bg: { purple: 1.0 }
-                    }
-                    panel_remove_btn = <HubActionButton> {
-                        text: "Remove"
-                        visible: false
-                        draw_bg: { danger: 1.0 }
-                        draw_text: {
-                            color: #b91c1c
-                            color_hover: #b91c1c
-                            color_down: #b91c1c
-                            color_focus: #b91c1c
-                            color_disabled: #b91c1c
-                        }
-                    }
-                    // Round X button shown only while a remove confirmation is pending
+                    spacing: 12
+                    margin: {right: 27}
+
+                    // Round X button shown only while a remove confirmation is pending —
+                    // placed first so when visible it appears to the LEFT of Remove,
+                    // roughly where the Load button would normally sit.
                     panel_remove_cancel_btn = <View> {
                         width: 32, height: 32
                         cursor: Hand
                         visible: false
-                        margin: {right: 12}
+                        margin: {right: 0}
                         align: {x: 0.5, y: 0.5}
                         show_bg: true
                         animator: {
@@ -879,26 +879,65 @@ live_design! {
                             }
                         }
                     }
+                    panel_load_btn = <HubActionButton> {
+                        text: "Load"
+                        visible: false
+                        margin: {right: 0}
+                        draw_bg: { purple: 1.0 }
+                    }
+                    panel_remove_btn = <HubActionButton> {
+                        text: "Remove"
+                        visible: false
+                        margin: {right: 0}
+                        draw_bg: { danger: 1.0 }
+                        draw_text: {
+                            color: #b91c1c
+                            color_hover: #b91c1c
+                            color_down: #b91c1c
+                            color_focus: #b91c1c
+                            color_disabled: #b91c1c
+                        }
+                    }
                     panel_unload_btn = <HubActionButton> {
                         text: "Unload"
                         visible: false
+                        margin: {right: 0}
                     }
+                    panel_chat_btn = <HubActionButton> {
+                        text: "Open in Chat"
+                        margin: {right: 0}
+                    }
+                }
+                // Loading label is wrapped in its own Fit View so its 27px right margin
+                // (which compensates for the outer wrapper's -27 margin) only counts in
+                // the flow when this row is actually visible. When `visible: false`, the
+                // whole holder collapses to zero size and contributes nothing — leaving
+                // the Load/Remove button layout unaffected.
+                panel_loading_row = <View> {
+                    width: Fit, height: Fit
+                    align: {y: 0.5}
+                    visible: false
+                    margin: {right: 27}
                     panel_loading_label = <Label> {
-                        margin: {right: 12}
                         draw_text: {
                             fn get_color(self) -> vec4 { return #5b45d8; }
                             text_style: <FONT_MEDIUM>{ font_size: 12.0 }
                         }
                         text: ""
                     }
-                    panel_chat_btn = <HubActionButton> {
-                        text: "Open in Chat"
-                    }
                 }
-                panel_download_btn = <HubActionButton> {
-                    text: "Download"
+                // Same wrapping rationale for the Download button — keep its margin scoped
+                // to when it's actually shown.
+                panel_download_row = <View> {
+                    width: Fit, height: Fit
+                    align: {y: 0.5}
                     visible: false
-                    draw_bg: { purple: 1.0 }
+                    margin: {right: 27}
+                    panel_download_btn = <HubActionButton> {
+                        text: "Download"
+                        margin: {right: 0}
+                        draw_bg: { purple: 1.0 }
+                    }
                 }
             }
         }

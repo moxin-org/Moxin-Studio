@@ -108,7 +108,7 @@ fn combined_dot_value(dl: ModelUiState, load: ModelLoadState) -> f64 {
 
 fn combined_status_label(dl: ModelUiState, load: ModelLoadState) -> &'static str {
     match load {
-        ModelLoadState::Loaded    => "Loaded  ●",
+        ModelLoadState::Loaded    => "Loaded",
         ModelLoadState::Loading   => "Loading...",
         ModelLoadState::LoadError => "Load Error",
         ModelLoadState::Unloaded  => dl.label(),
@@ -679,12 +679,12 @@ impl ModelHubApp {
         // Hide "Open in Chat" button and loading label (Label doesn't support visible: false in live_design)
         self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, false);
         self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, false);
-        self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_loading_label)).set_visible(cx, false);
-        self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_loading_label)).set_visible(cx, false);
-        self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_loading_label)).set_visible(cx, false);
-        self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_loading_label)).set_visible(cx, false);
-        self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_loading_label)).set_visible(cx, false);
-        self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_label)).set_visible(cx, false);
+        self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
+        self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
+        self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
+        self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
+        self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
+        self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
         self.view.widget(ids!(hub_voice_panel)).set_visible(cx, false);
         // Init voice defaults
         self.voice_quality  = "standard".to_string();
@@ -826,7 +826,7 @@ impl ModelHubApp {
         // Download buttons
         let show_dl   = !is_dl && !is_done && !is_manual;
         let show_can  = is_dl;
-        let show_rm   = is_done;
+        let show_rm   = is_done && load == ModelLoadState::Unloaded;
         let show_prog = is_dl;
         let show_download_btn = (show_dl || is_dl) && !is_manual;
         let download_text = if is_dl { "Downloading..." } else { "Download" };
@@ -892,6 +892,9 @@ impl ModelHubApp {
         // Show round X cancel only while a remove confirmation is pending on this model
         let show_remove_cancel = show_rm
             && self.pending_remove_id.as_deref() == Some(model_id);
+        // While a remove confirmation is pending, the X cancel sits where Load normally
+        // would — so hide Load to avoid showing both side-by-side.
+        let show_load = show_load && !show_remove_cancel;
         let show_runtime_row = show_load || show_unload || show_loading || show_chat || show_rm;
 
         // ids!() is compile-time — each panel's paths must be written explicitly.
@@ -901,8 +904,8 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_llm_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.button(ids!(hub_llm_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
-                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.button(ids!(hub_llm_panel.hub_panel_header.panel_download_row.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_download_row)).set_visible(cx, show_download_btn);
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
@@ -914,8 +917,8 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
-                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
-                self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_loading_row)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_loading_row.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, show_chat);
                 self.view.widget(ids!(hub_llm_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_llm_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
@@ -934,8 +937,8 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_vlm_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.button(ids!(hub_vlm_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
-                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.button(ids!(hub_vlm_panel.hub_panel_header.panel_download_row.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_download_row)).set_visible(cx, show_download_btn);
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
@@ -947,8 +950,8 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
-                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
-                self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_loading_row)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_loading_row.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, show_chat);
                 self.view.widget(ids!(hub_vlm_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_vlm_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
@@ -967,8 +970,8 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_asr_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.button(ids!(hub_asr_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
-                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.button(ids!(hub_asr_panel.hub_panel_header.panel_download_row.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_download_row)).set_visible(cx, show_download_btn);
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
@@ -980,8 +983,8 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
-                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
-                self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_loading_row)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_loading_row.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_asr_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_asr_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
@@ -999,8 +1002,8 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_tts_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.button(ids!(hub_tts_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
-                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.button(ids!(hub_tts_panel.hub_panel_header.panel_download_row.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_download_row)).set_visible(cx, show_download_btn);
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
@@ -1012,8 +1015,8 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
-                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
-                self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_loading_row)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_loading_row.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_tts_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_tts_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
@@ -1031,8 +1034,8 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_image_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.button(ids!(hub_image_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
-                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.button(ids!(hub_image_panel.hub_panel_header.panel_download_row.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_download_row)).set_visible(cx, show_download_btn);
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
@@ -1044,8 +1047,8 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
-                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
-                self.view.label(ids!(hub_image_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_loading_row)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_image_panel.hub_panel_header.panel_loading_row.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_image_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
@@ -1063,8 +1066,8 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_image_edit_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.button(ids!(hub_image_edit_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
-                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.button(ids!(hub_image_edit_panel.hub_panel_header.panel_download_row.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_download_row)).set_visible(cx, show_download_btn);
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
@@ -1076,8 +1079,8 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
-                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
-                self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_row)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_row.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_image_edit_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
                 if show_prog {
@@ -1095,8 +1098,8 @@ impl ModelHubApp {
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_model_desc)).set_text(cx, &desc);
                 self.view.view(ids!(hub_video_panel.hub_panel_header.panel_status_dot))
                     .apply_over(cx, live! { draw_bg: { status: (dot) } });
-                self.view.button(ids!(hub_video_panel.hub_panel_header.panel_download_btn)).set_text(cx, download_text);
-                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_download_btn)).set_visible(cx, show_download_btn);
+                self.view.button(ids!(hub_video_panel.hub_panel_header.panel_download_row.panel_download_btn)).set_text(cx, download_text);
+                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_download_row)).set_visible(cx, show_download_btn);
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_status_text)).set_text(cx, status_text);
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_size_text)).set_text(cx, &size);
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_mem_text)).set_text(cx, &mem);
@@ -1108,8 +1111,8 @@ impl ModelHubApp {
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_runtime_row)).set_visible(cx, show_runtime_row);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_load_btn)).set_visible(cx, show_load);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_unload_btn)).set_visible(cx, show_unload);
-                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_loading_label)).set_visible(cx, show_loading);
-                self.view.label(ids!(hub_video_panel.hub_panel_header.panel_loading_label)).set_text(cx, loading_text);
+                self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_loading_row)).set_visible(cx, show_loading);
+                self.view.label(ids!(hub_video_panel.hub_panel_header.panel_loading_row.panel_loading_label)).set_text(cx, loading_text);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_chat_btn)).set_visible(cx, false);
                 self.view.widget(ids!(hub_video_panel.hub_panel_header.panel_status_msg)).set_visible(cx, show_status_msg);
                 self.view.label(ids!(hub_video_panel.hub_panel_header.panel_status_msg)).set_text(cx, &msg);
@@ -1176,37 +1179,37 @@ impl ModelHubApp {
 
         let (dl, cancel, rm) = match self.active_panel {
             ActivePanel::Llm => (
-                self.view.button(ids!(hub_llm_panel.hub_panel_header.panel_download_btn)).clicked(actions),
+                self.view.button(ids!(hub_llm_panel.hub_panel_header.panel_download_row.panel_download_btn)).clicked(actions),
                 self.view.button(ids!(hub_llm_panel.hub_panel_header.panel_cancel_btn)).clicked(actions),
                 self.view.button(ids!(hub_llm_panel.hub_panel_header.panel_remove_btn)).clicked(actions),
             ),
             ActivePanel::Vlm => (
-                self.view.button(ids!(hub_vlm_panel.hub_panel_header.panel_download_btn)).clicked(actions),
+                self.view.button(ids!(hub_vlm_panel.hub_panel_header.panel_download_row.panel_download_btn)).clicked(actions),
                 self.view.button(ids!(hub_vlm_panel.hub_panel_header.panel_cancel_btn)).clicked(actions),
                 self.view.button(ids!(hub_vlm_panel.hub_panel_header.panel_remove_btn)).clicked(actions),
             ),
             ActivePanel::Asr => (
-                self.view.button(ids!(hub_asr_panel.hub_panel_header.panel_download_btn)).clicked(actions),
+                self.view.button(ids!(hub_asr_panel.hub_panel_header.panel_download_row.panel_download_btn)).clicked(actions),
                 self.view.button(ids!(hub_asr_panel.hub_panel_header.panel_cancel_btn)).clicked(actions),
                 self.view.button(ids!(hub_asr_panel.hub_panel_header.panel_remove_btn)).clicked(actions),
             ),
             ActivePanel::Tts => (
-                self.view.button(ids!(hub_tts_panel.hub_panel_header.panel_download_btn)).clicked(actions),
+                self.view.button(ids!(hub_tts_panel.hub_panel_header.panel_download_row.panel_download_btn)).clicked(actions),
                 self.view.button(ids!(hub_tts_panel.hub_panel_header.panel_cancel_btn)).clicked(actions),
                 self.view.button(ids!(hub_tts_panel.hub_panel_header.panel_remove_btn)).clicked(actions),
             ),
             ActivePanel::Image => (
-                self.view.button(ids!(hub_image_panel.hub_panel_header.panel_download_btn)).clicked(actions),
+                self.view.button(ids!(hub_image_panel.hub_panel_header.panel_download_row.panel_download_btn)).clicked(actions),
                 self.view.button(ids!(hub_image_panel.hub_panel_header.panel_cancel_btn)).clicked(actions),
                 self.view.button(ids!(hub_image_panel.hub_panel_header.panel_remove_btn)).clicked(actions),
             ),
             ActivePanel::ImageEdit => (
-                self.view.button(ids!(hub_image_edit_panel.hub_panel_header.panel_download_btn)).clicked(actions),
+                self.view.button(ids!(hub_image_edit_panel.hub_panel_header.panel_download_row.panel_download_btn)).clicked(actions),
                 self.view.button(ids!(hub_image_edit_panel.hub_panel_header.panel_cancel_btn)).clicked(actions),
                 self.view.button(ids!(hub_image_edit_panel.hub_panel_header.panel_remove_btn)).clicked(actions),
             ),
             ActivePanel::Video => (
-                self.view.button(ids!(hub_video_panel.hub_panel_header.panel_download_btn)).clicked(actions),
+                self.view.button(ids!(hub_video_panel.hub_panel_header.panel_download_row.panel_download_btn)).clicked(actions),
                 self.view.button(ids!(hub_video_panel.hub_panel_header.panel_cancel_btn)).clicked(actions),
                 self.view.button(ids!(hub_video_panel.hub_panel_header.panel_remove_btn)).clicked(actions),
             ),
