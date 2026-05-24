@@ -37,6 +37,24 @@ fn strip_quant_suffix(name: &str) -> String {
     name.to_string()
 }
 
+fn is_supported_audio_path(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    lower.ends_with(".wav")
+        || lower.ends_with(".mp3")
+        || lower.ends_with(".m4a")
+        || lower.ends_with(".flac")
+        || lower.ends_with(".ogg")
+        || lower.ends_with(".aac")
+}
+
+fn audio_display_name(path: &str) -> String {
+    Path::new(path)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(path)
+        .to_string()
+}
+
 // ─── List row ────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy)]
@@ -146,6 +164,8 @@ struct AsrState {
     audio_path: String, transcript: String,
     is_running: bool,
     rx: Option<mpsc::Receiver<Result<String, String>>>,
+    playing: bool,
+    play_process: Option<std::process::Child>,
 }
 
 #[derive(Default)]
@@ -472,6 +492,36 @@ impl Widget for ModelHubApp {
                         if lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")
                             || lower.ends_with(".bmp") || lower.ends_with(".gif") || lower.ends_with(".webp") {
                             self.set_vlm_image_path(cx, path.clone());
+                            break;
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        // ── ASR audio drop zone (drag-and-drop from Finder) ─────────────────
+        let asr_drop_zone_area = self.view.view(ids!(hub_asr_panel.asr_drop_zone)).area();
+        match event.drag_hits(cx, asr_drop_zone_area) {
+            DragHit::Drag(e) => {
+                match e.state {
+                    DragState::In | DragState::Over => {
+                        *e.response.lock().unwrap() = DragResponse::Copy;
+                        self.view.view(ids!(hub_asr_panel.asr_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (1.0) } });
+                        self.view.redraw(cx);
+                    }
+                    DragState::Out => {
+                        self.view.view(ids!(hub_asr_panel.asr_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (0.0) } });
+                        self.view.redraw(cx);
+                    }
+                }
+            }
+            DragHit::Drop(e) => {
+                self.view.view(ids!(hub_asr_panel.asr_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (0.0) } });
+                for item in e.items.iter() {
+                    if let DragItem::FilePath { path, .. } = item {
+                        if is_supported_audio_path(path) {
+                            self.set_asr_audio_path(cx, path.clone());
                             break;
                         }
                     }
@@ -1359,7 +1409,6 @@ impl ModelHubApp {
         if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_system_card.card_body.llm_system)).changed(actions)       { self.llm_state.system = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_llm_panel.llm_user_card.card_body.llm_user)).changed(actions)         { self.llm_state.user = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_vlm_panel.vlm_user_card.card_body.vlm_user)).changed(actions)         { self.vlm_state.user = t.to_string(); }
-        if let Some(t) = self.view.text_input(ids!(hub_asr_panel.asr_audio_path)).changed(actions)   { self.asr_state.audio_path = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_tts_panel.tts_text_input)).changed(actions)   { self.tts_state.text = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_image_panel.img_prompt)).changed(actions)     { self.image_state.prompt = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_image_panel.img_neg_prompt)).changed(actions) { self.image_state.neg_prompt = t.to_string(); }
@@ -1452,17 +1501,15 @@ impl ModelHubApp {
         }
     }
     fn handle_asr_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        if self.view.button(ids!(hub_asr_panel.asr_browse_btn)).clicked(actions) {
-            if let Some(path) = FileDialog::new()
-                .add_filter("Audio", &["wav", "mp3", "m4a", "flac", "ogg", "aac"])
-                .pick_file()
-            {
-                let s = path.to_string_lossy().to_string();
-                self.asr_state.audio_path = s.clone();
-                self.view.text_input(ids!(hub_asr_panel.asr_audio_path)).set_text(cx, &s);
-                self.view.redraw(cx);
-            }
+        let play_clicked = self.view.view(ids!(hub_asr_panel.asr_drop_zone.asr_audio_preview.asr_play_btn)).finger_down(actions).is_some();
+        if play_clicked {
+            self.toggle_asr_audio_preview(cx);
+        } else if self.view.view(ids!(hub_asr_panel.asr_drop_zone)).finger_down(actions).is_some() {
+            self.pick_asr_audio_file(cx);
         }
+
+        self.update_asr_audio_playback(cx);
+
         if self.view.button(ids!(hub_asr_panel.asr_transcribe_btn)).clicked(actions) {
             if let Some(sel) = self.selected_id.clone() {
                 let load = self.load_states.get(&sel).copied().unwrap_or_default();
@@ -1472,6 +1519,66 @@ impl ModelHubApp {
                 }
                 let path = self.asr_state.audio_path.clone();
                 self.call_asr(cx, sel, path);
+            }
+        }
+    }
+
+    fn pick_asr_audio_file(&mut self, cx: &mut Cx) {
+        if let Some(path) = FileDialog::new()
+            .add_filter("Audio", &["wav", "mp3", "m4a", "flac", "ogg", "aac"])
+            .pick_file()
+        {
+            self.set_asr_audio_path(cx, path.to_string_lossy().to_string());
+        }
+    }
+
+    fn set_asr_audio_path(&mut self, cx: &mut Cx, path: String) {
+        self.stop_asr_audio_preview(cx);
+        let display = audio_display_name(&path);
+        self.asr_state.audio_path = path;
+        self.view.label(ids!(hub_asr_panel.asr_drop_label)).set_visible(cx, false);
+        self.view.view(ids!(hub_asr_panel.asr_drop_zone.asr_audio_preview)).set_visible(cx, true);
+        self.view.label(ids!(hub_asr_panel.asr_drop_zone.asr_audio_preview.asr_audio_name)).set_text(cx, &display);
+        self.view.label(ids!(hub_asr_panel.asr_drop_zone.asr_audio_preview.asr_play_btn.asr_play_label)).set_text(cx, "Play");
+        self.view.redraw(cx);
+    }
+
+    fn toggle_asr_audio_preview(&mut self, cx: &mut Cx) {
+        if self.asr_state.audio_path.is_empty() {
+            return;
+        }
+        if self.asr_state.playing {
+            self.stop_asr_audio_preview(cx);
+        } else if let Ok(child) = std::process::Command::new("afplay")
+            .arg(&self.asr_state.audio_path)
+            .spawn()
+        {
+            self.asr_state.play_process = Some(child);
+            self.asr_state.playing = true;
+            self.view.label(ids!(hub_asr_panel.asr_drop_zone.asr_audio_preview.asr_play_btn.asr_play_label)).set_text(cx, "Pause");
+            self.view.redraw(cx);
+        }
+    }
+
+    fn stop_asr_audio_preview(&mut self, cx: &mut Cx) {
+        if let Some(mut proc) = self.asr_state.play_process.take() {
+            let _ = proc.kill();
+        }
+        self.asr_state.playing = false;
+        self.view.label(ids!(hub_asr_panel.asr_drop_zone.asr_audio_preview.asr_play_btn.asr_play_label)).set_text(cx, "Play");
+        self.view.redraw(cx);
+    }
+
+    fn update_asr_audio_playback(&mut self, cx: &mut Cx) {
+        if !self.asr_state.playing {
+            return;
+        }
+        if let Some(proc) = self.asr_state.play_process.as_mut() {
+            if let Ok(Some(_)) = proc.try_wait() {
+                self.asr_state.play_process = None;
+                self.asr_state.playing = false;
+                self.view.label(ids!(hub_asr_panel.asr_drop_zone.asr_audio_preview.asr_play_btn.asr_play_label)).set_text(cx, "Play");
+                self.view.redraw(cx);
             }
         }
     }
@@ -3133,4 +3240,23 @@ fn stream_download(
         }
     }
     Ok(total)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detects_supported_audio_paths_case_insensitively() {
+        assert!(is_supported_audio_path("/tmp/sample.WAV"));
+        assert!(is_supported_audio_path("/tmp/sample.m4a"));
+        assert!(is_supported_audio_path("/tmp/sample.FLAC"));
+        assert!(!is_supported_audio_path("/tmp/sample.txt"));
+    }
+
+    #[test]
+    fn derives_audio_display_name_from_path() {
+        assert_eq!(audio_display_name("/Users/alana/Downloads/demo clip.wav"), "demo clip.wav");
+        assert_eq!(audio_display_name("standalone.mp3"), "standalone.mp3");
+    }
 }

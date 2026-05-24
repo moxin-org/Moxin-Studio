@@ -1564,16 +1564,85 @@ live_design! {
                     padding: {left: 30, right: 30, top: 0, bottom: 28}
 
                     <HubInputLabel> { text: "AUDIO FILE" margin: {top: 0, bottom: 6} }
-                    <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        align: {y: 0.5}
-                        margin: {bottom: 4}
-                        asr_audio_path = <HubPanelInput> {
-                            width: Fill, height: 36
-                            margin: {right: 6, bottom: 0}
+
+                    // Drag-and-drop zone for audio files from Finder
+                    asr_drop_zone = <View> {
+                        width: Fill, height: 96
+                        margin: {bottom: 14}
+                        padding: {left: 12, right: 12, top: 12, bottom: 12}
+                        flow: Overlay
+                        cursor: Hand
+                        event_order: Down
+                        show_bg: true
+                        draw_bg: {
+                            instance drag_over: 0.0
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                let border = mix(#d1d5db, #6366f1, self.drag_over);
+                                let fill = mix(#f9fafb, #eef2ff, self.drag_over);
+                                sdf.box(2.0, 2.0, self.rect_size.x - 4.0, self.rect_size.y - 4.0, 8.0);
+                                sdf.fill(border);
+                                sdf.box(3.5, 3.5, self.rect_size.x - 7.0, self.rect_size.y - 7.0, 6.5);
+                                sdf.fill(fill);
+                                return sdf.result;
+                            }
                         }
-                        asr_browse_btn = <HubActionButton> { text: "Browse..." margin: {right: 0} }
+                        align: {x: 0.5, y: 0.5}
+
+                        asr_drop_label = <Label> {
+                            text: "Click or drag file to this area"
+                            draw_text: {
+                                color: #9ca3af
+                                text_style: { font_size: 12.0 }
+                            }
+                        }
+
+                        asr_audio_preview = <View> {
+                            width: Fill, height: Fit
+                            visible: false
+                            flow: Right
+                            align: {y: 0.5}
+                            spacing: 10
+
+                            asr_audio_name = <Label> {
+                                width: Fill, height: Fit
+                                draw_text: {
+                                    color: #374151
+                                    text_style: <FONT_MEDIUM>{ font_size: 12.0 }
+                                }
+                            }
+
+                            asr_play_btn = <View> {
+                                width: 68, height: 30
+                                cursor: Hand
+                                align: {x: 0.5, y: 0.5}
+                                show_bg: true
+                                draw_bg: {
+                                    instance hover: 0.0
+                                    fn pixel(self) -> vec4 {
+                                        let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                        sdf.box(0.5, 0.5, self.rect_size.x - 1.0, self.rect_size.y - 1.0, 6.0);
+                                        sdf.fill_keep(mix(#ffffff, #f3f4f6, self.hover));
+                                        sdf.stroke(#d1d5db, 1.0);
+                                        return sdf.result;
+                                    }
+                                }
+                                animator: {
+                                    hover = {
+                                        default: off
+                                        off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
+                                        on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                                    }
+                                }
+                                asr_play_label = <Label> {
+                                    text: "Play"
+                                    draw_text: {
+                                        color: #374151
+                                        text_style: <FONT_MEDIUM>{ font_size: 11.0 }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     <View> {
