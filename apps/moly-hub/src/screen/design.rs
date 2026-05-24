@@ -1364,14 +1364,6 @@ live_design! {
 
                 hub_panel_header = <HubPanelHeader> {}
 
-                hub_llm_divider = <View> {
-                    width: Fill, height: 0
-                    show_bg: true
-                    draw_bg: {
-                        fn pixel(self) -> vec4 { return #f1f5f9; }
-                    }
-                }
-
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
@@ -1443,20 +1435,12 @@ live_design! {
 
                 hub_panel_header = <HubPanelHeader> {}
 
-                hub_vlm_divider = <View> {
-                    width: Fill, height: 1
-                    show_bg: true
-                    draw_bg: {
-                        fn pixel(self) -> vec4 { return #f1f5f9; }
-                    }
-                }
-
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 14, bottom: 28}
+                    padding: {left: 30, right: 30, top: 0, bottom: 28}
 
-                    <HubInputLabel> { text: "IMAGE FILE" }
+                    <HubInputLabel> { text: "IMAGE FILE" margin: {top: 0, bottom: 6} }
 
                     // Drag-and-drop zone for image files from Finder
                     vlm_drop_zone = <View> {
@@ -1526,20 +1510,12 @@ live_design! {
 
                 hub_panel_header = <HubPanelHeader> {}
 
-                hub_asr_divider = <View> {
-                    width: Fill, height: 1
-                    show_bg: true
-                    draw_bg: {
-                        fn pixel(self) -> vec4 { return #f1f5f9; }
-                    }
-                }
-
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 14, bottom: 28}
+                    padding: {left: 30, right: 30, top: 0, bottom: 28}
 
-                    <HubInputLabel> { text: "AUDIO FILE" }
+                    <HubInputLabel> { text: "AUDIO FILE" margin: {top: 0, bottom: 6} }
                     <View> {
                         width: Fill, height: Fit
                         flow: Right
@@ -1573,20 +1549,12 @@ live_design! {
 
                 hub_panel_header = <HubPanelHeader> {}
 
-                hub_tts_divider = <View> {
-                    width: Fill, height: 1
-                    show_bg: true
-                    draw_bg: {
-                        fn pixel(self) -> vec4 { return #f1f5f9; }
-                    }
-                }
-
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 14, bottom: 28}
+                    padding: {left: 30, right: 30, top: 0, bottom: 28}
 
-                    <HubInputLabel> { text: "VOICE" }
+                    <HubInputLabel> { text: "VOICE" margin: {top: 0, bottom: 6} }
                     tts_voice_list = <PortalList> {
                         width: Fill, height: 360
                         flow: Down
@@ -1634,20 +1602,12 @@ live_design! {
 
                 hub_panel_header = <HubPanelHeader> {}
 
-                hub_image_divider = <View> {
-                    width: Fill, height: 1
-                    show_bg: true
-                    draw_bg: {
-                        fn pixel(self) -> vec4 { return #f1f5f9; }
-                    }
-                }
-
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 14, bottom: 28}
+                    padding: {left: 30, right: 30, top: 0, bottom: 28}
 
-                    <HubInputLabel> { text: "PROMPT" }
+                    <HubInputLabel> { text: "PROMPT" margin: {top: 0, bottom: 6} }
                     img_prompt = <HubPanelInput> {
                         height: 58
                         empty_text: "A beautiful landscape..."
@@ -1711,17 +1671,11 @@ live_design! {
                 hub_panel_header = <HubPanelHeader> {}
 
                 <View> {
-                    width: Fill, height: 1
-                    show_bg: true
-                    draw_bg: { fn pixel(self) -> vec4 { return #f1f5f9; } }
-                }
-
-                <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 14, bottom: 28}
+                    padding: {left: 30, right: 30, top: 0, bottom: 28}
 
-                    <HubInputLabel> { text: "REFERENCE IMAGE" }
+                    <HubInputLabel> { text: "REFERENCE IMAGE" margin: {top: 0, bottom: 6} }
 
                     // Drag-and-drop zone for reference image
                     img_edit_drop_zone = <View> {
@@ -1821,20 +1775,12 @@ live_design! {
 
                 hub_panel_header = <HubPanelHeader> {}
 
-                hub_video_divider = <View> {
-                    width: Fill, height: 1
-                    show_bg: true
-                    draw_bg: {
-                        fn pixel(self) -> vec4 { return #f1f5f9; }
-                    }
-                }
-
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 14, bottom: 28}
+                    padding: {left: 30, right: 30, top: 0, bottom: 28}
 
-                    <HubInputLabel> { text: "PROMPT" }
+                    <HubInputLabel> { text: "PROMPT" margin: {top: 0, bottom: 6} }
                     vid_prompt = <HubPanelInput> {
                         height: 58
                         empty_text: "A cat walking on the beach at sunset..."
