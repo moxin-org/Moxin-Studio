@@ -66,10 +66,6 @@ pub struct SettingsApp {
     #[rust]
     fetched_models: Vec<(String, bool)>,
 
-    /// Whether the Add Provider modal is visible
-    #[rust]
-    modal_visible: bool,
-
     /// Cached list of provider IDs for the PortalList
     #[rust]
     provider_ids: Vec<String>,
@@ -127,9 +123,10 @@ impl Widget for SettingsApp {
             self.open_add_provider_modal(cx);
         }
 
-        // Close modal button clicks
+        // Close modal button clicks (X / Cancel / clicking the backdrop)
         if self.view.button(ids!(close_modal_button)).clicked(&actions)
-            || self.view.button(ids!(cancel_modal_button)).clicked(&actions) {
+            || self.view.button(ids!(cancel_modal_button)).clicked(&actions)
+            || self.view.modal(ids!(add_provider_modal)).dismissed(&actions) {
             self.close_add_provider_modal(cx);
         }
 
@@ -193,9 +190,6 @@ impl Widget for SettingsApp {
             self.view.mp_switch(ids!(select_all_toggle)).set_on(cx, all_enabled);
         }
 
-        // Show/hide add provider modal
-        self.view.view(ids!(add_provider_modal)).set_visible(cx, self.modal_visible);
-
         // Set version label
         self.view.label(ids!(version_label)).set_text(cx,
             &format!("Moxin Studio v{}", env!("CARGO_PKG_VERSION")));
@@ -248,9 +242,20 @@ impl Widget for SettingsApp {
 }
 
 impl SettingsApp {
+    /// Some logos are white-on-transparent, which is invisible on white surfaces.
+    /// Return a tinted backdrop color for those; transparent for everything else.
+    fn provider_icon_bg(provider_id: &str) -> Vec4 {
+        match provider_id {
+            // Groq's wordmark is pure white; Kimi's bubble logo has a lot of empty space.
+            // A dark slate backdrop makes both readable.
+            "groq" | "kimi" => Vec4 { x: 0.122, y: 0.161, z: 0.216, w: 1.0 }, // #1f2937
+            _ => Vec4 { x: 0.0, y: 0.0, z: 0.0, w: 0.0 },
+        }
+    }
+
     /// Get provider icon from the loaded LiveDependency list
     fn get_provider_icon(&self, provider_id: &str) -> Option<&LiveDependency> {
-        // Icons are stored in order: openai, anthropic, gemini, ollama, deepseek, nvidia, groq, kimi, zhipu
+        // Icons are stored in order: openai, anthropic, gemini, ollama, deepseek, nvidia, groq, kimi, zhipu, nn
         let index = match provider_id {
             "openai" => Some(0),
             "anthropic" => Some(1),
@@ -261,10 +266,12 @@ impl SettingsApp {
             "groq" => Some(6),
             "kimi" => Some(7),
             "zhipu" => Some(8),
+            "ominix-image" => Some(9),
             _ => None,
         };
         index.and_then(|i| self.provider_icons.get(i))
     }
+
 
     fn select_provider(&mut self, cx: &mut Cx, scope: &mut Scope, id: &str) {
         self.selected_provider_id = Some(id.to_string());
@@ -288,11 +295,20 @@ impl SettingsApp {
                 // Update title
                 self.view.label(ids!(provider_title)).set_text(cx, &provider.name);
 
-                // Update provider title icon using LiveDependency from live_design
+                // Update provider title icon. LiveDependency::as_str() returns a
+                // "crate://..." dep path (not a filesystem path), so we must load via
+                // load_image_dep_by_path; fall back to file path in case it ever resolves to one.
                 if let Some(icon_dep) = self.get_provider_icon(&provider_id) {
-                    let icon_path = icon_dep.as_str();
-                    let _ = self.view.image(ids!(provider_title_icon)).load_image_file_by_path(cx, Path::new(icon_path));
+                    let image_ref = self.view.image(ids!(provider_title_icon));
+                    let dep_str = icon_dep.as_str();
+                    if image_ref.load_image_dep_by_path(cx, dep_str).is_err() {
+                        let _ = image_ref.load_image_file_by_path(cx, Path::new(dep_str));
+                    }
                 }
+                let bg = Self::provider_icon_bg(&provider_id);
+                self.view.view(ids!(provider_title_icon_wrap)).apply_over(cx, live!{
+                    draw_bg: { bg_color: (bg) }
+                });
 
                 // Update URL input
                 self.view.text_input(ids!(api_host_input)).set_text(cx, &provider.url);
@@ -416,19 +432,22 @@ impl SettingsApp {
                 draw_bg: { status: (status_val) }
             });
 
-            // Set icon if available - use file path loading
+            // Set icon if available — try dep-path loading first, fall back to file path.
             if let Some(icon_dep) = self.get_provider_icon(provider_id) {
-                let icon_path = icon_dep.as_str();
                 let image_ref = item_widget.image(ids!(provider_icon));
-                ::log::debug!("Icon for {}: path={}", provider_id, icon_path);
-                // Use file path loading since as_str() returns resolved filesystem path
-                match image_ref.load_image_file_by_path(cx, Path::new(icon_path)) {
-                    Ok(_) => ::log::debug!("Icon loaded OK for {}", provider_id),
-                    Err(e) => ::log::warn!("Icon load failed for {}: {:?}", provider_id, e),
+                let dep_str = icon_dep.as_str();
+                if image_ref.load_image_dep_by_path(cx, dep_str).is_err() {
+                    let _ = image_ref.load_image_file_by_path(cx, Path::new(dep_str));
                 }
             } else {
                 ::log::debug!("No icon configured for provider: {}", provider_id);
             }
+
+            // Tint the icon wrapper background for providers whose logos are white-on-transparent.
+            let bg = Self::provider_icon_bg(provider_id);
+            item_widget.view(ids!(provider_icon_wrap)).apply_over(cx, live!{
+                draw_bg: { bg_color: (bg) }
+            });
 
             // Set enabled switch state
             item_widget.mp_switch(ids!(provider_enabled)).set_on(cx, enabled);
@@ -683,17 +702,17 @@ impl SettingsApp {
 
     /// Open the Add Provider modal
     fn open_add_provider_modal(&mut self, cx: &mut Cx) {
-        self.modal_visible = true;
         // Clear the input fields
         self.view.text_input(ids!(new_provider_name)).set_text(cx, "");
         self.view.text_input(ids!(new_provider_url)).set_text(cx, "https://api.example.com/v1");
         self.view.text_input(ids!(new_provider_key)).set_text(cx, "");
+        self.view.modal(ids!(add_provider_modal)).open(cx);
         self.view.redraw(cx);
     }
 
     /// Close the Add Provider modal
     fn close_add_provider_modal(&mut self, cx: &mut Cx) {
-        self.modal_visible = false;
+        self.view.modal(ids!(add_provider_modal)).close(cx);
         self.view.redraw(cx);
     }
 
@@ -742,7 +761,7 @@ impl SettingsApp {
         }
 
         // Close modal and refresh
-        self.modal_visible = false;
+        self.view.modal(ids!(add_provider_modal)).close(cx);
         self.view.redraw(cx);
     }
 

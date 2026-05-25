@@ -21,6 +21,7 @@ live_design! {
     ICON_GROQ = dep("crate://self/resources/providers/groq.png")
     ICON_KIMI = dep("crate://self/resources/providers/kimi.png")
     ICON_ZHIPU = dep("crate://self/resources/providers/zhipu.png")
+    ICON_NN = dep("crate://self/resources/providers/nn.png")
 
     // Settings label style
     SettingsLabel = <Label> {
@@ -139,9 +140,26 @@ live_design! {
         align: {y: 0.5}
         spacing: 12
 
-        provider_icon = <Image> {
+        // Wrapper gives a rounded backdrop we can tint per-provider
+        // (needed for logos that are white-on-transparent, like Groq/Kimi).
+        provider_icon_wrap = <View> {
             width: 32, height: 32
-            fit: Smallest
+            show_bg: true
+            align: {x: 0.5, y: 0.5}
+            draw_bg: {
+                instance bg_color: #00000000
+                instance radius: 6.0
+                fn pixel(self) -> vec4 {
+                    let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                    sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.radius);
+                    sdf.fill(self.bg_color);
+                    return sdf.result;
+                }
+            }
+            provider_icon = <Image> {
+                width: 28, height: 28
+                fit: Smallest
+            }
         }
 
         // Status indicator
@@ -231,7 +249,9 @@ live_design! {
 
     pub SettingsApp = {{SettingsApp}} {
         width: Fill, height: Fill
-        flow: Right
+        // Top-level is Overlay so the Modal's walk doesn't compete for horizontal space
+        // with the main content columns (otherwise its backdrop renders as a narrow strip).
+        flow: Overlay
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
@@ -239,7 +259,8 @@ live_design! {
             }
         }
 
-        // Provider icons for dynamic loading (order: openai, anthropic, gemini, ollama, deepseek, nvidia, groq, kimi)
+        // Provider icons for dynamic loading (order matches get_provider_icon in mod.rs):
+        // 0=openai, 1=anthropic, 2=gemini, 3=ollama, 4=deepseek, 5=nvidia, 6=groq, 7=kimi, 8=zhipu, 9=nn (ominix-image)
         provider_icons: [
             (ICON_OPENAI),
             (ICON_ANTHROPIC),
@@ -250,7 +271,12 @@ live_design! {
             (ICON_GROQ),
             (ICON_KIMI),
             (ICON_ZHIPU),
+            (ICON_NN),
         ]
+
+        main_content = <View> {
+            width: Fill, height: Fill
+            flow: Right
 
         // Left panel - provider list
         providers_panel = <View> {
@@ -349,10 +375,25 @@ live_design! {
                     align: {y: 0.5}
                     spacing: 12
 
-                    provider_title_icon = <Image> {
+                    provider_title_icon_wrap = <View> {
                         width: 32, height: 32
-                        fit: Smallest
-                        source: (ICON_OPENAI)
+                        show_bg: true
+                        align: {x: 0.5, y: 0.5}
+                        draw_bg: {
+                            instance bg_color: #00000000
+                            instance radius: 6.0
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.radius);
+                                sdf.fill(self.bg_color);
+                                return sdf.result;
+                            }
+                        }
+                        provider_title_icon = <Image> {
+                            width: 28, height: 28
+                            fit: Smallest
+                            source: (ICON_OPENAI)
+                        }
                     }
 
                     provider_title = <Label> {
@@ -604,141 +645,126 @@ live_design! {
                 }
             }
         }
+        } // end main_content
 
-        // Add Provider Modal (overlay)
-        add_provider_modal = <View> {
-            width: Fill, height: Fill
-            flow: Overlay
-            visible: false
-            show_bg: true
-            draw_bg: {
-                fn pixel(self) -> vec4 {
-                    return vec4(0.0, 0.0, 0.0, 0.5); // Semi-transparent backdrop
+        // Add Provider Modal — a real popup that renders from the root pass,
+        // so it overlays the whole window instead of being laid out next to siblings.
+        add_provider_modal = <Modal> {
+            content: <View> {
+                width: 400, height: Fit
+                flow: Down
+                padding: 24
+                spacing: 16
+                show_bg: true
+                draw_bg: {
+                    instance radius: 8.0
+                    fn pixel(self) -> vec4 {
+                        let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                        let sz = self.rect_size - 2.0;
+                        sdf.box(1.0, 1.0, sz.x, sz.y, self.radius);
+                        sdf.fill(#ffffff);
+                        sdf.stroke(#d1d5db, 1.0);
+                        return sdf.result;
+                    }
                 }
-            }
 
-            // Center the modal content
-            <View> {
-                width: Fill, height: Fill
-                align: {x: 0.5, y: 0.5}
+                // Modal header
+                modal_header = <View> {
+                    width: Fill, height: Fit
+                    flow: Right
+                    align: {y: 0.5}
 
-                modal_content = <View> {
-                    width: 400, height: Fit
+                    modal_title = <Label> {
+                        text: "Add Provider"
+                        draw_text: {
+                            fn get_color(self) -> vec4 {
+                                return #1f2937;
+                            }
+                            text_style: <FONT_SEMIBOLD>{ font_size: 18.0 }
+                        }
+                    }
+
+                    <View> { width: Fill } // Spacer
+
+                    close_modal_button = <Button> {
+                        width: 24, height: 24
+                        padding: 0
+                        draw_bg: {
+                            instance hover: 0.0
+                            instance pressed: 0.0
+                            instance radius: 4.0
+
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                let sz = self.rect_size - 2.0;
+                                let color = mix(vec4(0.0), #e5e7eb, self.hover);
+                                sdf.box(1.0, 1.0, sz.x, sz.y, self.radius);
+                                sdf.fill(color);
+                                return sdf.result;
+                            }
+                        }
+                        draw_text: {
+                            fn get_color(self) -> vec4 {
+                                return #6b7280;
+                            }
+                            text_style: <FONT_REGULAR>{ font_size: 14.0 }
+                        }
+                        text: "×"
+                    }
+                }
+
+                // Provider name input
+                name_section = <View> {
+                    width: Fill, height: Fit
                     flow: Down
-                    padding: 24
-                    spacing: 16
-                    show_bg: true
-                    draw_bg: {
-                        instance radius: 8.0
-                        fn pixel(self) -> vec4 {
-                            let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                            let sz = self.rect_size - 2.0;
-                            sdf.box(1.0, 1.0, sz.x, sz.y, self.radius);
-                            // Slightly gray background so white inputs stand out
-                            sdf.fill(#f3f4f6);
-                            sdf.stroke(#d1d5db, 1.0);
-                            return sdf.result;
-                        }
+                    spacing: 6
+
+                    <SettingsLabel> { text: "Provider Name" }
+                    new_provider_name = <SettingsTextInput> {
+                        empty_text: "My Provider"
                     }
+                }
 
-                    // Modal header
-                    modal_header = <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        align: {y: 0.5}
+                // API URL input
+                url_section = <View> {
+                    width: Fill, height: Fit
+                    flow: Down
+                    spacing: 6
 
-                        modal_title = <Label> {
-                            text: "Add Provider"
-                            draw_text: {
-                                fn get_color(self) -> vec4 {
-                                    return #1f2937;
-                                }
-                                text_style: <FONT_SEMIBOLD>{ font_size: 18.0 }
-                            }
-                        }
-
-                        <View> { width: Fill } // Spacer
-
-                        close_modal_button = <Button> {
-                            width: 24, height: 24
-                            padding: 0
-                            draw_bg: {
-                                instance hover: 0.0
-                                instance pressed: 0.0
-                                instance radius: 4.0
-
-                                fn pixel(self) -> vec4 {
-                                    let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                    let sz = self.rect_size - 2.0;
-                                    let color = mix(vec4(0.0), #e5e7eb, self.hover);
-                                    sdf.box(1.0, 1.0, sz.x, sz.y, self.radius);
-                                    sdf.fill(color);
-                                    return sdf.result;
-                                }
-                            }
-                            draw_text: {
-                                fn get_color(self) -> vec4 {
-                                    return #6b7280;
-                                }
-                                text_style: <FONT_REGULAR>{ font_size: 14.0 }
-                            }
-                            text: "×"
-                        }
+                    <SettingsLabel> { text: "API URL" }
+                    new_provider_url = <SettingsTextInput> {
+                        text: "https://api.example.com/v1"
+                        empty_text: "https://api.example.com/v1"
                     }
+                    <SettingsHint> { text: "OpenAI-compatible API endpoint" }
+                }
 
-                    // Provider name input
-                    name_section = <View> {
-                        width: Fill, height: Fit
-                        flow: Down
-                        spacing: 6
+                // API Key input
+                key_section = <View> {
+                    width: Fill, height: Fit
+                    flow: Down
+                    spacing: 6
 
-                        <SettingsLabel> { text: "Provider Name" }
-                        new_provider_name = <SettingsTextInput> {
-                            empty_text: "My Provider"
-                        }
+                    <SettingsLabel> { text: "API Key (optional)" }
+                    new_provider_key = <SettingsTextInput> {
+                        is_password: true
+                        empty_text: "sk-..."
                     }
+                }
 
-                    // API URL input
-                    url_section = <View> {
-                        width: Fill, height: Fit
-                        flow: Down
-                        spacing: 6
+                // Modal actions
+                modal_actions = <View> {
+                    width: Fill, height: Fit
+                    flow: Right
+                    spacing: 12
+                    margin: {top: 8}
+                    align: {x: 1.0}
 
-                        <SettingsLabel> { text: "API URL" }
-                        new_provider_url = <SettingsTextInput> {
-                            text: "https://api.example.com/v1"
-                            empty_text: "https://api.example.com/v1"
-                        }
-                        <SettingsHint> { text: "OpenAI-compatible API endpoint" }
+                    cancel_modal_button = <TestButton> {
+                        text: "Cancel"
                     }
-
-                    // API Key input
-                    key_section = <View> {
-                        width: Fill, height: Fit
-                        flow: Down
-                        spacing: 6
-
-                        <SettingsLabel> { text: "API Key (optional)" }
-                        new_provider_key = <SettingsTextInput> {
-                            is_password: true
-                            empty_text: "sk-..."
-                        }
-                    }
-
-                    // Modal actions
-                    modal_actions = <View> {
-                        width: Fill, height: Fit
-                        flow: Right
-                        spacing: 12
-                        margin: {top: 8}
-                        align: {x: 1.0}
-
-                        cancel_modal_button = <TestButton> {
-                            text: "Cancel"
-                        }
-                        save_new_provider_button = <SaveButton> {
-                            text: "Add Provider"
-                        }
+                    save_new_provider_button = <SaveButton> {
+                        text: "Add Provider"
                     }
                 }
             }
