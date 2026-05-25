@@ -905,6 +905,7 @@ live_design! {
                     }
                     panel_chat_btn = <HubActionButton> {
                         text: "Open in Chat"
+                        visible: false
                         margin: {right: 0}
                     }
                 }
