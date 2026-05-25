@@ -2319,8 +2319,11 @@ impl ChatApp {
             }
 
             // Debug: show key length and first/last chars
-            let key_preview = if api_key.len() > 8 {
-                format!("{}...{} (len={})", &api_key[..4], &api_key[api_key.len()-4..], api_key.len())
+            let char_count = api_key.chars().count();
+            let key_preview = if char_count > 8 {
+                let prefix: String = api_key.chars().take(4).collect();
+                let suffix: String = api_key.chars().skip(char_count - 4).collect();
+                format!("{}...{} (len={})", prefix, suffix, api_key.len())
             } else {
                 format!("(len={})", api_key.len())
             };
