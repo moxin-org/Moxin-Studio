@@ -1683,22 +1683,24 @@ impl ChatApp {
         if self.mode_busy { return; }
         if !matches!(self.chat_mode, ChatMode::Vlm | ChatMode::Tts | ChatMode::ImageGen | ChatMode::VideoGen) { return; }
 
-        use moly_kit::aitk::protocol::EntityId;
+        use moly_kit::aitk::protocol::{Attachment, EntityId};
 
-        let (msg_count, user_text) = {
+        let (msg_count, user_text, user_attachments) = {
             let ctrl = self.chat_controller.lock().unwrap();
             let msgs = &ctrl.state().messages;
             let count = msgs.len();
             if count <= self.last_mode_msg_count {
                 return;
             }
-            let mut user_text = None;
+            let mut user_text: Option<String> = None;
+            let mut user_attachments: Vec<Attachment> = Vec::new();
             for msg in msgs[self.last_mode_msg_count..].iter() {
                 if matches!(msg.from, EntityId::User) {
                     user_text = Some(msg.content.text.clone());
+                    user_attachments = msg.content.attachments.clone();
                 }
             }
-            (count, user_text)
+            (count, user_text, user_attachments)
         };
 
         let Some(user_text) = user_text else {
@@ -1731,7 +1733,7 @@ impl ChatApp {
 
         match self.chat_mode {
             ChatMode::Vlm => {
-                self.start_vlm_generate(cx, scope, user_text);
+                self.start_vlm_generate(cx, scope, user_text, user_attachments);
             }
             ChatMode::Tts => {
                 self.start_tts_generate(cx, scope, user_text);
@@ -2056,19 +2058,38 @@ impl ChatApp {
 
     /// TTS: Start speech generation from the given text
     /// VLM: Make a direct API call with text + image (matching hub format)
-    fn start_vlm_generate(&mut self, _cx: &mut Cx, scope: &mut Scope, user_text: String) {
+    fn start_vlm_generate(
+        &mut self,
+        _cx: &mut Cx,
+        scope: &mut Scope,
+        user_text: String,
+        user_attachments: Vec<moly_kit::aitk::protocol::Attachment>,
+    ) {
         let model_id = if let Some(store) = scope.data.get::<Store>() {
             store.get_active_local_model().unwrap_or("").to_string()
         } else { return };
 
         if user_text.is_empty() { return; }
 
-        let image_b64 = self.vlm_image_b64.clone();
+        // Two ways the user can supply an image:
+        //   1. The custom VLM drop-zone / Browse button in mode_controls
+        //      (stored as base64 in self.vlm_image_b64, mime assumed jpeg)
+        //   2. The chat prompt input's attachment picker
+        //      (stored as Attachment on the user message; mime in content_type)
+        // Pre-encoded b64 is taken as-is (jpeg). Otherwise we'll read the
+        // first image attachment inside the worker thread.
+        let preencoded_jpeg_b64 = self.vlm_image_b64.clone();
+        let image_attachment = if preencoded_jpeg_b64.is_some() {
+            None
+        } else {
+            user_attachments.into_iter().find(|a| a.is_image() && a.is_available())
+        };
+
         self.mode_busy = true;
 
-        // VLM models require an image input — short-circuit with a friendly
-        // reply instead of hitting the server (which would 500 on text-only).
-        if image_b64.is_none() {
+        // No image from either source → short-circuit with a friendly reply
+        // instead of hitting the server (which would 500 on text-only input).
+        if preencoded_jpeg_b64.is_none() && image_attachment.is_none() {
             let (tx, rx) = mpsc::channel();
             tx.send(Ok(
                 "Please attach an image first — Vision-Language models need an image to respond."
@@ -2081,17 +2102,29 @@ impl ChatApp {
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
             let result = (|| -> Result<String, String> {
+                // Resolve the image to (mime, base64). Drop-zone path is already
+                // jpeg+base64; attachment path is read here on the worker thread.
+                let (mime, b64) = if let Some(b64) = preencoded_jpeg_b64 {
+                    ("image/jpeg".to_string(), b64)
+                } else {
+                    let att = image_attachment.expect("guarded above");
+                    let mime = att.content_type_or_octet_stream().to_string();
+                    let b64 = futures::executor::block_on(att.read_base64())
+                        .map_err(|e| format!("reading image attachment: {}", e))?;
+                    (mime, b64)
+                };
+
                 let client = reqwest::blocking::Client::builder()
                     .timeout(std::time::Duration::from_secs(120))
                     .build()
                     .map_err(|e| e.to_string())?;
-                let mut content = vec![serde_json::json!({"type": "text", "text": user_text})];
-                if let Some(b64) = image_b64 {
-                    content.push(serde_json::json!({
+                let content = vec![
+                    serde_json::json!({"type": "text", "text": user_text}),
+                    serde_json::json!({
                         "type": "image_url",
-                        "image_url": {"url": format!("data:image/jpeg;base64,{}", b64)}
-                    }));
-                }
+                        "image_url": {"url": format!("data:{};base64,{}", mime, b64)}
+                    }),
+                ];
                 let body = serde_json::json!({
                     "model": model_id,
                     "messages": [{"role": "user", "content": content}]
