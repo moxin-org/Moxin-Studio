@@ -2095,11 +2095,19 @@ impl ChatApp {
                     .send()
                     .map_err(|e| e.to_string())?;
                 let status = resp.status();
-                let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
+                let resp_text = resp.text().map_err(|e| format!("reading response: {}", e))?;
                 if !status.is_success() {
-                    let err_msg = json["error"]["message"].as_str().unwrap_or("Unknown error");
+                    // Try to extract a structured error message; fall back to raw body
+                    // so server panics / non-JSON 5xx bodies remain visible.
+                    let err_msg = serde_json::from_str::<serde_json::Value>(&resp_text)
+                        .ok()
+                        .and_then(|j| j["error"]["message"].as_str().map(|s| s.to_string()))
+                        .unwrap_or_else(|| resp_text[..resp_text.len().min(500)].to_string());
                     return Err(format!("API error {}: {}", status, err_msg));
                 }
+                let json: serde_json::Value = serde_json::from_str(&resp_text)
+                    .map_err(|e| format!("parsing JSON: {} (first 200 chars: {})",
+                        e, &resp_text[..resp_text.len().min(200)]))?;
                 json["choices"][0]["message"]["content"]
                     .as_str()
                     .map(|s| s.to_string())
