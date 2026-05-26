@@ -627,10 +627,11 @@ live_design! {
             }
         }
 
-        // Actual output text, hidden until output arrives
+        // Actual output text. Stays "visible" in the widget tree because
+        // Label has no `visible` live field — collapses to zero height while
+        // text is empty, and the sibling placeholder View is toggled instead.
         output_label = <Label> {
             width: Fill
-            visible: false
             draw_text: {
                 fn get_color(self) -> vec4 {
                     return #131d21;
