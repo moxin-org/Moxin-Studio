@@ -665,11 +665,11 @@ live_design! {
     // Demo: bg-surface border border-outline-variant p-4 rounded-xl flex items-center gap-4
     HubStatCard = <View> {
         width: Fill, height: 120
-        padding: {left: 14, right: 14, top: 10, bottom: 10}
+        padding: {left: 10, right: 10, top: 10, bottom: 10}
         margin: {right: 12}
         flow: Right
         align: {y: 0.5}
-        spacing: 12
+        spacing: 10
         show_bg: true
         draw_bg: {
             fn pixel(self) -> vec4 {
@@ -771,7 +771,7 @@ live_design! {
         // Demo: font-bold text-on-surface
         draw_text: {
             color: #131d21
-            text_style: <FONT_BOLD>{ font_size: 12.5 }
+            text_style: <FONT_BOLD>{ font_size: 11.0 }
             wrap: Word
         }
     }
