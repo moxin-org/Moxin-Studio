@@ -2060,6 +2060,18 @@ impl ChatApp {
         let image_b64 = self.vlm_image_b64.clone();
         self.mode_busy = true;
 
+        // VLM models require an image input — short-circuit with a friendly
+        // reply instead of hitting the server (which would 500 on text-only).
+        if image_b64.is_none() {
+            let (tx, rx) = mpsc::channel();
+            tx.send(Ok(
+                "Please attach an image first — Vision-Language models need an image to respond."
+                    .to_string()
+            )).ok();
+            self.mode_rx = Some(rx);
+            return;
+        }
+
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
             let result = (|| -> Result<String, String> {

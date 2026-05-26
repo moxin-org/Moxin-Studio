@@ -313,7 +313,7 @@ live_design! {
                     }
                     align: {x: 0.5, y: 0.5}
                     vlm_drop_label = <Label> {
-                        text: "Drop image here"
+                        text: "Drop image here · required for VLM chat"
                         draw_text: { color: #9ca3af, text_style: <FONT_REGULAR>{ font_size: 12.0 } }
                     }
                 }
