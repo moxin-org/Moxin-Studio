@@ -5,12 +5,15 @@ pub mod design;
 
 use makepad_widgets::*;
 use moly_kit::prelude::*;
-use moly_kit::aitk::controllers::chat::{ChatStateMutation, ChatTask};
+use moly_kit::aitk::controllers::chat::{
+    ChatControl, ChatControllerPlugin, ChatStateMutation, ChatTask,
+};
 use moly_kit::aitk::protocol::{Bot, BotId, EntityAvatar};
 use moly_kit::widgets::a2ui_client::A2uiClient;
 use moly_kit::widgets::model_selector::BotGroup;
 use moly_kit::widgets::prompt_input::PromptInputAction;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, mpsc};
 
 use moly_data::{ChatId, Store};
@@ -31,6 +34,24 @@ enum ChatMode {
     Tts,
     ImageGen,
     VideoGen,
+}
+
+/// Plugin that suppresses `ChatTask::Send` while the chat is in a non-LLM
+/// mode (VLM / TTS / ImageGen / VideoGen / ASR). In those modes ChatApp
+/// dispatches its own request via `maybe_handle_mode_message`, so letting
+/// the Chat widget's built-in Send fire would just hit the wrong endpoint
+/// (or the right endpoint with the wrong payload) and produce a stray 500.
+struct ModeGuardPlugin {
+    suppress_send: Arc<AtomicBool>,
+}
+
+impl ChatControllerPlugin for ModeGuardPlugin {
+    fn on_task(&mut self, task: &ChatTask) -> ChatControl {
+        match task {
+            ChatTask::Send if self.suppress_send.load(Ordering::Relaxed) => ChatControl::Stop,
+            _ => ChatControl::Continue,
+        }
+    }
 }
 
 // Actions emitted by ChatHistoryPanel
@@ -288,6 +309,14 @@ pub struct ChatApp {
     // We create our own controller and set it on the Chat widget
     #[rust(ChatController::new_arc())]
     chat_controller: Arc<Mutex<ChatController>>,
+
+    /// Shared flag toggled by `sync_chat_mode` and read by `ModeGuardPlugin`
+    /// to drop the Chat widget's auto Send in non-LLM modes.
+    #[rust(Arc::new(AtomicBool::new(false)))]
+    suppress_chat_send: Arc<AtomicBool>,
+
+    #[rust]
+    mode_guard_registered: bool,
 
     #[rust]
     controller_set_on_widget: bool,
@@ -557,6 +586,16 @@ impl ChatApp {
     fn maybe_set_controller_on_widget(&mut self, cx: &mut Cx) {
         if self.controller_set_on_widget {
             return;
+        }
+
+        // Register the mode-guard plugin before the Chat widget hooks in,
+        // so it gets first say on ChatTask::Send and can suppress sends
+        // dispatched while we're in a non-LLM mode.
+        if !self.mode_guard_registered {
+            self.chat_controller.lock().unwrap().prepend_plugin(ModeGuardPlugin {
+                suppress_send: self.suppress_chat_send.clone(),
+            });
+            self.mode_guard_registered = true;
         }
 
         let mut chat_ref = self.view.chat(ids!(main_content.chat));
@@ -988,11 +1027,6 @@ impl Widget for ChatApp {
         // Poll mode-specific async results (ASR/TTS/Image)
         self.poll_mode_result(cx);
         self.poll_file_picker(cx, scope);
-
-        // Strip stale error messages from ChatTask::Send in non-chat modes.
-        // The Chat widget dispatches ChatTask::Send async; the error arrives after
-        // our interception, so we clean it up on every frame.
-        self.strip_mode_errors(cx);
 
         // Keep requesting frames while a mode operation is in progress
         // so we can poll the result and keep the typing animation running.
@@ -1537,30 +1571,10 @@ impl ChatApp {
             let ctrl = self.chat_controller.lock().unwrap();
             self.last_mode_msg_count = ctrl.state().messages.len();
         }
-    }
-
-    /// Remove error/system messages injected by ChatTask::Send in non-chat modes.
-    /// The Chat widget fires ChatTask::Send automatically, which hits the wrong
-    /// endpoint for TTS/ImageGen/VideoGen/ASR and returns an error. This method
-    /// strips those stale errors every frame so they don't clutter the chat.
-    fn strip_mode_errors(&mut self, _cx: &mut Cx) {
-        if !matches!(self.chat_mode, ChatMode::Vlm | ChatMode::Tts | ChatMode::ImageGen | ChatMode::VideoGen | ChatMode::Asr) {
-            return;
-        }
-        use moly_kit::aitk::protocol::EntityId;
-        let mut ctrl = self.chat_controller.lock().unwrap();
-        let msgs = &ctrl.state().messages;
-        let error_count = msgs.iter().filter(|m| {
-            matches!(m.from, EntityId::App | EntityId::System) && !m.metadata.is_writing
-        }).count();
-        if error_count > 0 {
-            let kept: Vec<_> = msgs.iter()
-                .filter(|m| m.metadata.is_writing || !matches!(m.from, EntityId::App | EntityId::System))
-                .cloned()
-                .collect();
-            ctrl.dispatch_mutation(VecMutation::Set(kept.clone()));
-            self.last_mode_msg_count = kept.len();
-        }
+        // Always keep the guard flag in sync (also covers the first frame
+        // before any mode transition has happened).
+        self.suppress_chat_send
+            .store(self.chat_mode != ChatMode::Llm, Ordering::Relaxed);
     }
 
     /// Poll the mode-specific async result channel and inject as assistant message
@@ -1692,19 +1706,11 @@ impl ChatApp {
             return;
         };
 
-        // Strip error/system messages from the failed ChatTask::Send
+        // Inject a "writing" indicator so the user sees the model is working
+        // while start_xxx_generate runs on a background thread.
         {
             use moly_kit::aitk::protocol::{Message, MessageContent, MessageMetadata};
             let mut ctrl = self.chat_controller.lock().unwrap();
-            let msgs = ctrl.state().messages.clone();
-            let kept: Vec<_> = msgs.iter().enumerate().filter(|(i, m)| {
-                if *i < self.last_mode_msg_count { return true; }
-                matches!(m.from, EntityId::User)
-            }).map(|(_, m)| m.clone()).collect();
-            if kept.len() < msgs.len() {
-                ctrl.dispatch_mutation(VecMutation::Set(kept.clone()));
-            }
-            // Inject a "writing" indicator message so users see the model is working
             let bot_id = ctrl.state().bot_id.clone();
             ctrl.dispatch_mutation(VecMutation::Push(Message {
                 from: bot_id.map(EntityId::Bot).unwrap_or(EntityId::System),
