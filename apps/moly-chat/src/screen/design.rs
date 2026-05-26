@@ -154,6 +154,11 @@ live_design! {
                         apply: { draw_bg: {hover: 1.0} }
                     }
                 }
+                down = {
+                    default: off
+                    off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                    on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                }
             }
 
             delete_icon = <Icon> {
@@ -344,6 +349,11 @@ live_design! {
                                     off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
                                     on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
                                 }
+                                down = {
+                                    default: off
+                                    off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                    on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                }
                             }
                             <Label> { text: "Browse...", draw_text: { color: #ffffff, text_style: <FONT_MEDIUM>{ font_size: 12.0 } } }
                         }
@@ -372,6 +382,11 @@ live_design! {
                                     default: off
                                     off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
                                     on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
+                                }
+                                down = {
+                                    default: off
+                                    off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                    on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                                 }
                             }
                             <Label> { text: "Clear", draw_text: { color: #dc2626, text_style: <FONT_MEDIUM>{ font_size: 10.0 } } }
@@ -568,11 +583,18 @@ live_design! {
                                 return sdf.result;
                             }
                         }
-                        animator: { hover = {
-                            default: off
-                            off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
-                            on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
-                        }}
+                        animator: {
+                            hover = {
+                                default: off
+                                off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
+                                on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                            }
+                        }
                         tts_play_label = <Label> {
                             text: "▶ Play"
                             draw_text: { color: #ffffff, text_style: <FONT_MEDIUM>{ font_size: 10.5 } }
@@ -591,11 +613,18 @@ live_design! {
                                 return sdf.result;
                             }
                         }
-                        animator: { hover = {
-                            default: off
-                            off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
-                            on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
-                        }}
+                        animator: {
+                            hover = {
+                                default: off
+                                off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
+                                on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                            }
+                        }
                         <Label> {
                             text: "⬇ Save"
                             draw_text: { color: #ffffff, text_style: <FONT_MEDIUM>{ font_size: 10.5 } }
@@ -654,6 +683,11 @@ live_design! {
                                     default: off
                                     off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
                                     on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
+                                }
+                                down = {
+                                    default: off
+                                    off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                    on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                                 }
                             }
                             <Label> { text: "Browse...", draw_text: { color: #374151, text_style: <FONT_REGULAR>{ font_size: 12.0 } } }
@@ -771,6 +805,11 @@ live_design! {
                                 off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
                             }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                            }
                         }
                         <Label> { text: "Browse...", draw_text: { color: #ffffff, text_style: <FONT_MEDIUM>{ font_size: 12.0 } } }
                     }
@@ -796,6 +835,11 @@ live_design! {
                                 default: off
                                 off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                             }
                         }
                         asr_play_label = <Label> { text: "▶ Play", draw_text: { color: #374151, text_style: <FONT_MEDIUM>{ font_size: 11.0 } } }
@@ -825,6 +869,11 @@ live_design! {
                                 default: off
                                 off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                             }
                         }
                         <Label> { text: "Clear", draw_text: { color: #dc2626, text_style: <FONT_MEDIUM>{ font_size: 10.0 } } }

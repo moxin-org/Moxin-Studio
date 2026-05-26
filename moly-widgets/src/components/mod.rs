@@ -66,6 +66,11 @@ live_design! {
                 off = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 0.0}} }
                 on  = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 1.0}} }
             }
+            down = {
+                default: off
+                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+            }
         }
         title = <Label> {
             width: Fill, height: Fit

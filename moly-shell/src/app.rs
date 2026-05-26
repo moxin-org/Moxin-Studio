@@ -150,6 +150,11 @@ live_design! {
                 off = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 0.0}} }
                 on  = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 1.0}} }
             }
+            down = {
+                default: off
+                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+            }
         }
 
         sidebar_icon = <Image> {
@@ -202,6 +207,11 @@ live_design! {
                     from: {all: Forward {duration: 0.0}}
                     apply: { draw_bg: {pressed: 1.0} }
                 }
+            }
+            down = {
+                default: off
+                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
             }
         }
 
@@ -421,6 +431,11 @@ live_design! {
                                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
                             }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                            }
                         }
                         <Label> {
                             text: "Download"
@@ -450,6 +465,11 @@ live_design! {
                                 default: off
                                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                             }
                         }
                         <Label> {
@@ -529,6 +549,11 @@ live_design! {
                                 default: off
                                 off = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.15}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                             }
                         }
                         flow: Right
@@ -641,6 +666,11 @@ live_design! {
                                 default: off
                                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                            }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                             }
                         }
                         <Label> {
@@ -883,6 +913,11 @@ live_design! {
                                     default: off
                                     off = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 0.0}} }
                                     on  = { from: {all: Forward{duration: 0.0}}, apply: {draw_bg: {hover: 1.0}} }
+                                }
+                                down = {
+                                    default: off
+                                    off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                    on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                                 }
                             }
 
@@ -1484,6 +1519,11 @@ live_design! {
                                                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
                                             }
+                                            down = {
+                                                default: off
+                                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                            }
                                         }
                                         <Label> {
                                             text: "Cancel"
@@ -1514,6 +1554,11 @@ live_design! {
                                                 default: off
                                                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                                            }
+                                            down = {
+                                                default: off
+                                                off = { from: {all: Forward {duration: 0.0}}, apply: {} }
+                                                on  = { from: {all: Forward {duration: 0.0}}, apply: {} }
                                             }
                                         }
                                         <Label> {

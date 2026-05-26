@@ -379,6 +379,14 @@ live_design! {
                 off = { from: {all: Forward {duration: 0.1}} apply: { draw_bg: {hover: 0.0} } }
                 on  = { from: {all: Forward {duration: 0.1}} apply: { draw_bg: {hover: 1.0} } }
             }
+            // View's handle_event plays `down.on`/`down.off` on FingerDown/Up
+            // whenever an animator is present; without these no-op states it
+            // logs `animate_to_live down.on not found` on every click.
+            down = {
+                default: off
+                off = { from: {all: Forward {duration: 0.0}} apply: {} }
+                on  = { from: {all: Forward {duration: 0.0}} apply: {} }
+            }
         }
 
         draw_bg: {
@@ -855,6 +863,11 @@ live_design! {
                                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
                             }
+                            down = {
+                                default: off
+                                off = { from: {all: Forward{duration: 0.0}}, apply: {} }
+                                on  = { from: {all: Forward{duration: 0.0}}, apply: {} }
+                            }
                         }
                         draw_bg: {
                             instance hover: 0.0
@@ -1147,6 +1160,11 @@ live_design! {
                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
             }
+            down = {
+                default: off
+                off = { from: {all: Forward{duration: 0.0}}, apply: {} }
+                on  = { from: {all: Forward{duration: 0.0}}, apply: {} }
+            }
         }
         tts_voice_selected_label = <Label> {
             width: Fill
@@ -1198,6 +1216,11 @@ live_design! {
                 default: off
                 off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                 on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+            }
+            down = {
+                default: off
+                off = { from: {all: Forward{duration: 0.0}}, apply: {} }
+                on  = { from: {all: Forward{duration: 0.0}}, apply: {} }
             }
         }
         voice_option_label = <Label> {
@@ -1595,6 +1618,11 @@ live_design! {
                                         off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                         on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
                                     }
+                                    down = {
+                                        default: off
+                                        off = { from: {all: Forward{duration: 0.0}}, apply: {} }
+                                        on  = { from: {all: Forward{duration: 0.0}}, apply: {} }
+                                    }
                                 }
                                 <Label> {
                                     text: "Full"
@@ -1722,6 +1750,11 @@ live_design! {
                                         default: off
                                         off = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 0.0}} }
                                         on  = { from: {all: Forward{duration: 0.1}}, apply: {draw_bg: {hover: 1.0}} }
+                                    }
+                                    down = {
+                                        default: off
+                                        off = { from: {all: Forward{duration: 0.0}}, apply: {} }
+                                        on  = { from: {all: Forward{duration: 0.0}}, apply: {} }
                                     }
                                 }
                                 asr_play_label = <Label> {
