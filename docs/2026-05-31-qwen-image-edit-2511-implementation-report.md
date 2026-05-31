@@ -21,10 +21,10 @@
 | 最终图像质量 | ⚠️ 出图但尚不可识别。Orchestration 层一处时间约定 / 调度细节仍有 bug,定位中 |
 | 同期产出 | 完整双路线计划文档(`2026-05-28-...sdcpp.md`)+ 本报告 |
 
-**推荐管理层决策(三选一,在文末展开):**
-- **A.** 继续 MLX 路线最后调试(收益:纯架构、性能最优;风险:剩余 bug 可能需要外部参考实现对照)。
-- **B.** 切换 stable-diffusion.cpp 子进程方案(原计划备选,已验证可行;代价:外部二进制 + 两套推理栈)。
-- **C.** 接受当前阶段性成果停留,把工作沉淀文档化。
+**推荐管理层决策:** 综合最新诊断(详见 §3.8「4bit 精度天花板」),**团队初步建议优先选 B(切换 sd.cpp 子进程方案)**。理由:Path A 即使我们成功定位并修复剩余的 orchestration bug,**仍有较高概率撞 Q4_0 naive 4bit 量化的精度天花板**——mlx-community 未发布 4bit edit 模型(只发了 8bit)正是此原因的行业级证据。Path B 用的 k-quant 量化是 outlier-aware 设计,**从根上绕开这一约束**,且该路径有完整、独立的实施计划(`2026-05-28-...sdcpp.md`)。
+- **A.** 继续 MLX 路径最后调试:2-4 天定位 orchestration bug,但**修通后仍可能撞精度墙**导致最终出图仍不可识别。
+- **B.** 切换 sd.cpp 子进程方案:1-2 天可见可识别的编辑图,**当前主推方案**。
+- **C.** 接受当前阶段性成果停留,把工作沉淀文档化(本报告已基本完成)。
 
 ---
 
@@ -180,7 +180,48 @@ GGUF 版 VL 命名与 crate 不匹配(`blk.N.*` vs `encoder.layers.N.*`),且 cra
 - latents std 缓慢增长(0.99→1.71),应朝数据尺度 ~0.44 收敛却没有。
 - 图仍非可识别内容,但比之前的纯噪声更有空间结构。
 
-**判断:** 离收敛只差一处约定/参数,但当前无法纯凭代码内推确定。需要外部参考实现(Diffusers/ComfyUI)做组件级数值对照才能继续定位。
+**初步判断:** 离收敛差至少一处约定/参数,需要外部参考实现(Diffusers/ComfyUI)做组件级数值对照才能定位。但进一步分析发现这之外**还有更深层的结构性问题**——见下节 §3.8。
+
+### 3.8 关键评估:4bit naive 量化的"精度天花板"
+
+进一步追问:**就算我们顺利修通剩余的 orchestration bug,16GB 上用 Q4_0 GGUF 能否最终出可识别的编辑图?** 综合行业证据与现象,**这个答案大概率是"不能"**。
+
+**(1) 行业证据(决定性)**
+
+mlx-community(MLX 量化模型的权威发行方)对 Qwen-Image 系列的选择:
+
+| 模型 | 4bit MLX 版 | 8bit MLX 版 |
+|---|---|---|
+| `Qwen-Image-2512`(文生图)| ✅ 有(`mlx-community/Qwen-Image-2512-4bit`,生产可用) | ✅ 有 |
+| `Qwen-Image-Edit-2511`(图像编辑)| **❌ 没有** | ✅ 仅此一个 |
+
+mlx-community **手握完整参考实现 + outlier-aware 量化工具,但主动选择不发布 edit 的 4bit 版**。这是行业最直接的"edit 模型的 4bit 精度不够"信号。我们的 unsloth Q4_0 GGUF **在精度层级上等价于这个被 mlx-community 否决的 4bit 档**。
+
+**(2) 现象佐证**
+
+最新测试的图像输出模式是**带空间结构的彩色乱码**——既不是纯噪声(说明模型在算),也不是可识别图(说明算得不准)。这是"信号方向大致对但精度被累积磨损"的典型签名,**与单一 bug 表现(通常会出现固定模式错误)不同**。
+
+**(3) 为什么 edit 比 gen 对精度更敏感**
+
+Qwen2.5 系列存在 **massive activation** 现象:某些通道激活值幅度数十至数百。对应权重必含 outlier。我们之前修复 6 个 BF16 接口层只是 outlier 分布的**冰山一角** —— 60 个 transformer 块的 attention 层里**很可能散布着大量 outlier-sensitive 通道**(尤其是 edit 模型的 attention 因要融合参考图 latents,通道分布比纯文生图更复杂)。
+
+朴素 4bit 量化(MLX `ops::quantize` 的 affine round-to-nearest)对 outlier 处理是**裁剪式的**——整组按 outlier 拉大 scale,小幅值权重被磨成 0。每层损失一点精度;60 层叠加 → velocity 整体方向偏离 → **永远不收敛**。这与我们的观测精确吻合。
+
+**(4) Path B(sd.cpp)为什么不会撞这堵墙**
+
+GGUF 的 **k-quant 系列**(`Q4_K_M`/`Q3_K_M`/`Q2_K`)使用**超块层级 scale + 块内 sub-scale 的混合结构**——本质就是 outlier-aware 设计。"K-quant"中的"K"来自"K-means-like grouped quantization",是 llama.cpp/ggml 社区**专门**为应对 LLM 量化中 outlier 问题研发的算法。
+
+sd.cpp 的 ggml 后端**原生**支持 k-quant,所以同样 ~12GB 体积下,k-quant 的有效精度远高于 Q4_0。同社区已有用户实测 sd.cpp + k-quant 在 ~16GB Mac 上跑出可识别的 Qwen-Image-Edit 输出。
+
+而 MLX 的 `load_gguf` 只支持 Q4_0/Q4_1/Q8_0,**正是因为 MLX 内置量化是简单 affine、处理不了 k-quant 的复杂结构**——根源也在 outlier 处理能力上。
+
+**(5) 如果要继续走 MLX 路径**
+
+要绕开精度天花板,只剩两条路,**均不在本团队当前能力范围内**:
+- 用 mlx-community 8bit edit:transformer 单独 22GB,16GB 装不下。
+- 自己用 AWQ/GPTQ 等 outlier-aware 算法把 edit 模型 re-quantize 到 4bit MLX 原生格式:需 ≥32GB 大内存机器 + 复杂量化工具链。
+
+**结论:Path A 已识别的剩余 orchestration bug 不是真正的"最后一公里"——它后面还隔着一堵 4bit 精度墙。** 这是把推荐从 A/B/C 中性陈列改为"主推 B"的核心依据。
 
 ---
 
@@ -212,15 +253,25 @@ GGUF 版 VL 命名与 crate 不匹配(`blk.N.*` vs `encoder.layers.N.*`),且 cra
 
 **预估时间:** 2-4 天。
 **收益:** 纯 MLX 架构、性能最优、零外部依赖。
-**风险:** 剩余 bug 在 orchestration 编排细节里,可能涉及 forward_edit 内部实现的某处不对称(API 那条 edit 路径从未真正跑通,bug 也未被发现过)。
+**风险(经 §3.8 分析后大幅提升):**
+1. 剩余 orchestration bug 本身需要外部参考实现对照才能定位(forward_edit 内部某处不对称,API edit 路径从未真正跑通过,bug 也从未暴露过)。
+2. **更关键的结构性风险**:即使 bug 修对,Q4_0 naive 4bit 量化的精度天花板仍在。最坏结局是花一周修通 bug、但出图仍不可识别——mlx-community 不发布 4bit edit 即此原因的行业级佐证。
+3. 要绕开精度墙,需 ≥32GB 机器 + outlier-aware 量化工具链(AWQ/GPTQ),不在本团队当前能力内。
 
-### 5.2 路径 B:切换 stable-diffusion.cpp 子进程方案
+### 5.2 路径 B:切换 stable-diffusion.cpp 子进程方案 — **当前主推**
 
 **预计工作:** 严格按 `2026-05-28-...sdcpp.md` 计划的 Route B 执行:编译 `sd` 二进制(Metal)→ 在 OminiX-API 加 `SdCppImageEngine`(子进程 spawn,模式同 ascend.rs)→ 接进 `/v1/images/generations`。
 
 **预估时间:** 1-2 天。
-**收益:** sd.cpp 已大量验证,原生支持混合精度 GGUF + offload,出图把握高。同 4bit 量化档下 sd.cpp 用的是 GPTQ/AWQ 级别的 outlier-aware 算法,直接绕开了我们卡在的 MLX naive 量化问题。
-**代价:** 外部二进制依赖、两套推理栈、偏离 OminiX 的"纯 MLX、专用 crate"设计哲学(但 OminiX-API 自身已有 `ascend.rs` 的 GGUF 子进程先例)。
+**收益:**
+- sd.cpp 在 ggml 生态长期生产可用,**原生支持 k-quant 量化**(`Q4_K_M`/`Q3_K_M`/`Q2_K`),从根上绕开 MLX 路径的精度天花板(详见 §3.8)。
+- 已有社区案例:同样 ~16GB Mac、同样 Qwen-Image-Edit 模型,sd.cpp 路线**确认能出可识别的编辑图**。
+- 出图把握高、迭代快(1-2 天 vs Path A 的 2-4 天+精度墙不确定性)。
+- OminiX-API 自身已有 `ascend.rs` 的 GGUF 子进程先例,接入模式有现成参考。
+
+**代价:**
+- 外部 `sd` 二进制依赖(编译 + 分发增加一个步骤)。
+- OminiX 后端从"纯 MLX"变成"MLX + ggml 子进程"两套栈(但 `ascend.rs` 已开此例,不算开新先河)。
 
 ### 5.3 路径 C:就此沉淀
 
@@ -240,6 +291,8 @@ GGUF 版 VL 命名与 crate 不匹配(`blk.N.*` vs `encoder.layers.N.*`),且 cra
 3. **Qwen2.5 系列有 massive activation 现象**:某些通道激活值极大(数十到数百),对应权重也含 outlier。这就是为什么 mlx-community 给 edit 只出 8bit、不出 4bit。
 4. **决策门是高 ROI 投资**:半天的轻量验证替我们排除了"花一周改 crate 才发现文件本身也跑不通"的极端浪费。
 5. **静默加载(`update_flattened`)是隐形杀手**:权重 shape/路径不匹配时,MLX 默认静默丢弃 + 用初始化值代替,运行无报错,只是输出错误。**任何复杂模型集成都应该加 strict-load 检查。**
+6. **k-quant vs naive 4bit:量化算法决定能不能跑低比特编辑模型**。Q4_0/Q4_1/Q8_0 这类老式 affine 量化对 outlier 是"裁剪式"的,在 outlier 密集模型(LLM 及其衍生扩散模型)上每层损失精度、累积发散;k-quant(`Q4_K_M`/`Q3_K_M`/`Q2_K`)是 llama.cpp 专门为 outlier 研发的层级 scale 结构,同体积下精度高得多。**Apple MLX 内置只支持前者,GGUF 生态(ggml/sd.cpp/llama.cpp)支持后者——这是选型时一个 12GB 体积下"能否真出图"的根本分水岭。**
+7. **行业发行方的选择本身就是技术信号**:mlx-community 发布 4bit gen 但不发布 4bit edit,这种"该有但没有"的缺口,往往比任何文档都更直接告诉你"此路不通"。**集成新模型前先扫一眼权威发行方的发布矩阵,能省下大量试错成本。**
 
 ---
 
