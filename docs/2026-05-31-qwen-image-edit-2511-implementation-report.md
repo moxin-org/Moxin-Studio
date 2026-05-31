@@ -18,7 +18,7 @@
 | 决策门 | ✅ 半天的低成本"go/no-go"验证完成,识别出 3 处必须修复的代码缺陷,且证明 16GB 内存可行 |
 | 内存/集成 | ✅ 整条链路(VAE + 文本编码器 + Transformer)在 16GB 上**无 OOM 跑通端到端**,带 staging |
 | 权重加载正确性 | ✅ 全部 4 类组件权重逐一验证装入正确(数值与原始 gguf 文件逐元素吻合)|
-| 最终图像质量 | ⚠️ 出图但尚不可识别。Orchestration 层一处时间约定 / 调度细节仍有 bug,定位中 |
+| 最终图像质量 | ⚠️ Path A 出图但尚不可识别(orchestration 层细节 bug);**Path B(sd.cpp)2026-05-31 当日实施完成,端到端出可识别编辑图**(详见 §8) |
 | 同期产出 | 完整双路线计划文档(`2026-05-28-...sdcpp.md`)+ 本报告 |
 
 **推荐管理层决策:** 综合最新诊断(详见 §3.8「4bit 精度天花板」),**团队初步建议优先选 B(切换 sd.cpp 子进程方案)**。理由:Path A 即使我们成功定位并修复剩余的 orchestration bug,**仍有较高概率撞 Q4_0 naive 4bit 量化的精度天花板**——mlx-community 未发布 4bit edit 模型(只发了 8bit)正是此原因的行业级证据。Path B 用的 k-quant 量化是 outlier-aware 设计,**从根上绕开这一约束**,且该路径有完整、独立的实施计划(`2026-05-28-...sdcpp.md`)。
@@ -305,3 +305,60 @@ sd.cpp 的 ggml 后端**原生**支持 k-quant,所以同样 ~12GB 体积下,k-qu
 ---
 
 **报告完。** 请管理层就上面三条路径给出方向,即可继续推进。
+
+---
+
+## 8. Path B 实施结果(2026-05-31 当日补充)
+
+§5 推荐选定后,当日下午即按 `2026-05-28-...sdcpp.md` 计划执行 Path B,**全部完成并端到端验证可识别编辑图**。
+
+### 8.1 完成清单
+
+| 子任务 | 内容 | 产出 |
+|---|---|---|
+| **B0-build** | `git clone --recursive leejet/stable-diffusion.cpp` + `cmake -DSD_METAL=ON` + build | `sd-cli` Metal 二进制 |
+| **B0-models** | 下 `Qwen-Image-Edit-2511-Q2_K.gguf`(7.5 GB)+ Comfy-Org `qwen_image_vae.safetensors`(242 MB)+ `Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf`(4.5 GB)→ 共 12.4 GB | `~/.OminiX/models/qwen-image-edit-2511-sdcpp/` |
+| **B0-smoke** | 直接 sd-cli 命令行,输入橙色虎斑猫 +「change the cat fur to bright blue」 | 蓝毛猫 PNG,**构图/姿势/背景全保留,仅毛色变蓝**;耗时 873 s(~14.5 min)|
+| **B1** | `OminiX-API/src/engines/sdcpp_image.rs`(290 行)= `SdCppConfig::from_env` + 纯函数 `build_sd_args` + `SdCppImageEngine` 子进程封装 | **7 个 TDD 单测全过** |
+| **B2** | state.rs / main.rs / handlers/image.rs(顶部分支)/ handlers/models.rs(verify-only no-op)接线 | `cargo check --bin ominix-api` 通过 |
+| **B3** | 启动 ominix-api 并 `curl -X POST /v1/images/generations` 带 b64 reference 图 | **HTTP 200,902 s,返回 PNG 与 B0 直接结果像素一致** |
+| **§6** | Moxin-Studio `moly-data/src/models_registry.json` 新增 `qwen-image-edit-2511-sdcpp` 条目(3 sources,inference_engine=sdcpp,image_edit panel)| `cargo check -p moly-data` 通过、JSON validate 通过 |
+
+### 8.2 关键发现(超出 Plan B 原文档的 3 处)
+
+1. **`sd-cli` 取代了旧 `sd` 二进制名**:Plan B 文档假设的二进制名是 `sd`;新版 sd.cpp(master-660-d2797b8)产出 `build/bin/sd-cli` + `sd-server`,**Rust 包装需用新名**。
+2. **`--qwen-image-zero-cond-t` 是 2511 强制 flag**:sd.cpp 官方 `docs/qwen_image_edit.md` 明确写明「**该 flag 不开,编辑质量显著下降**」。原 Plan B 文档没收录。已写入 `SdCppConfig` 默认开,并加单测 `build_sd_args_includes_qwen_image_zero_cond_t_for_2511`。
+3. **Apple Silicon 必须 `--vae-on-cpu --clip-on-cpu`**:当前 sd.cpp master Metal backend **缺 `PAD` op 实现**,WAN VAE encoder 在 Metal 上直接 `ggml_abort`(`unsupported op 'PAD'`)。`--backend "..."` 字符串解析约束严格(只接受 device 名,如 `MTL0`,不接受 `metal`),**正解是用专用 CLI flag** `--vae-on-cpu`/`--clip-on-cpu`。Transformer 仍走 Metal,性能损失极小(VAE 单次 ~20s 不在热路径)。两个 flag 都写入 `SdCppConfig` 默认开,并加单测 `build_sd_args_keeps_vae_and_clip_on_cpu_for_apple_silicon` 防回归。
+
+### 8.3 16 GB M4 实测性能
+
+| 阶段 | 耗时 |
+|---|---|
+| 模型加载 + Metal kernel 编译(首次)| ~180 s |
+| 采样 20 步(512×512)| 840 s(平均 42 s/it,swap-bound)|
+| VAE decode | 20 s |
+| **端到端总耗时** | **~14–15 min** |
+
+内存:transformer 7.1 GB + VL 5.8 GB + VAE 0.24 GB ≈ **13.2 GB 常驻 + activation**,带 `--offload-to-cpu` 在 16 GB 上勉强能装,系统 free pages 短时降至 70 MB(swap 重压),但全程稳定无 OOM。
+
+### 8.4 改动清单
+
+**Moxin-Studio(本仓库)**:
+- `moly-data/src/models_registry.json` +69 行(新增 `qwen-image-edit-2511-sdcpp` 注册条目)
+
+**OminiX-API(sibling repo,团队成员无提交权限,改动留本地)**:
+- 新增 `src/engines/sdcpp_image.rs`(290 行)
+- 改 `src/engines/mod.rs` `src/state.rs` `src/main.rs` `src/handlers/image.rs` `src/handlers/models.rs`(共 5 个文件)
+
+**stable-diffusion.cpp**:外部依赖,clone 到 `~/Documents/projects/stable-diffusion.cpp`(随 sd.cpp 上游变化,需以 commit `d2797b8` 为兼容基线)。
+
+### 8.5 Path B 落地后的"剩余风险"复核
+
+| 风险类别 | Plan B 文档预估 | 实测结果 |
+|---|---|---|
+| sd.cpp 在 Apple Silicon 能否真出图 | 高把握(成熟运行时)| ✅ 已验证 |
+| 16 GB 能否装下 | 是(小 k-quant + offload)| ✅ Q2_K + offload 装下 |
+| 编辑质量(k-quant 是否绕开精度墙)| 主推依据 | ✅ 蓝毛猫细节完整、prompt 精确响应 |
+| 速度 | 慢 | 实测 ~14–15 min/edit,**可用但偏慢**(可改用 Q3_K_M 提速、或加 Lightning 4-step LoRA 进一步减步数)|
+
+**结论:Path B 全链路打通,可作为 Moxin Studio 中 Qwen-Image-Edit-2511 的正式接入实现交付。** 实验性标签建议在 Moxin Studio UI 上保留(注册表已带 `experimental` 标签),原因是首次运行较慢 + sd.cpp Metal backend 上游仍在补 op,而非质量问题。
