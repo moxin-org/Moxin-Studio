@@ -184,6 +184,10 @@ GGUF 版 VL 命名与 crate 不匹配(`blk.N.*` vs `encoder.layers.N.*`),且 cra
 
 ### 3.8 关键评估:4bit naive 量化的"精度天花板"
 
+> **⚠️ 2026-06-01 更新 — 本节假说已被实验证伪。** Path B 落地后,在同样的 16 GB Mac 上,用 sd.cpp 加载**同一份 unsloth `Qwen-Image-Edit-2511-Q4_0.gguf`** 跑 cats→dogs 这类强语义物体替换 prompt,**能稳定出可识别的编辑图**(部分替换 + 构图保留)。这直接说明 Q4_0 量化本身的精度足够;Path A 当时出"带空间结构的彩色乱码"几乎可以归因到我们 MLX pipeline 自身的 orchestration bug,而不是 Q4_0 量化的精度天花板。详细对照实验记录在 §8.6。**保留本节原文于此**,作为「行业证据 + 现象推理」当时看起来很有说服力、但被一次便宜实验直接证伪的反面教材。
+>
+> **修正后的判断:** Path A 的剩余 orchestration bug 仍然存在,但其后面**没有**一堵不可越过的精度墙。Path A 仍可救;只是 Path B 已交付且更稳,继续推 Path A 的优先级降为「研究性 follow-up」而非「释放价值的必经之路」。
+
 进一步追问:**就算我们顺利修通剩余的 orchestration bug,16GB 上用 Q4_0 GGUF 能否最终出可识别的编辑图?** 综合行业证据与现象,**这个答案大概率是"不能"**。
 
 **(1) 行业证据(决定性)**
@@ -362,3 +366,26 @@ sd.cpp 的 ggml 后端**原生**支持 k-quant,所以同样 ~12GB 体积下,k-qu
 | 速度 | 慢 | 实测 ~14–15 min/edit,**可用但偏慢**(可改用 Q3_K_M 提速、或加 Lightning 4-step LoRA 进一步减步数)|
 
 **结论:Path B 全链路打通,可作为 Moxin Studio 中 Qwen-Image-Edit-2511 的正式接入实现交付。** 实验性标签建议在 Moxin Studio UI 上保留(注册表已带 `experimental` 标签),原因是首次运行较慢 + sd.cpp Metal backend 上游仍在补 op,而非质量问题。
+
+### 8.6 GUI 实测发现:Q2_K vs Q4_0,以及 §3.8 精度墙假说的证伪(2026-06-01)
+
+Path B GUI 接入后,在真实用户操作下用同一张参考图(5 只猫)和同一个 prompt「change the cats to dogs」做 A/B 对比 Q2_K(默认下载档,~7.5 GB)与 Q4_0(从 Path A 调试时残留在磁盘的 `unsloth/.../qwen-image-edit-2511-Q4_0.gguf`,~11.85 GB),其余参数完全一致(seed 默认 42、20 steps、cfg 2.5、512×512、`--qwen-image-zero-cond-t` 开、`--vae-on-cpu --clip-on-cpu`)。
+
+| 量化档 | 文件大小 | 端到端耗时 | 输出 prompt 响应度 | 细节质量 |
+|---|---|---|---|---|
+| **Q2_K** | 7.5 GB | ~14 min | ❌ **完全无响应**(还是 5 只猫站一排,只是构图微调)| ✅ 锐利 |
+| **Q4_0** | 11.85 GB | ~18 min(swap 重)| ⚠️ **部分响应**(5 只动物变成 3 只,其中至少 1 只明显是狗的头形/耳朵/姿态)| ⚠️ 略糊(swap 重压 + 单步精度紧)|
+
+**意义:**
+
+1. **§3.8 的"4bit 精度墙"假说被直接证伪。** 报告里那个语气很强的判断——"Q4_0 naive 4bit 量化 → 60 层 outlier 损失累积 → velocity 永远不收敛"——在 sd.cpp 跑同一份 Q4_0 文件时不成立。**Q4_0 量化本身的精度足够**完成 Qwen-Image-Edit-2511 的强语义物体替换(不仅是颜色这类局部属性修改)。
+2. **Q2_K 才是真正的精度地板。** 对物体替换这种强语义指令完全失去 prompt 跟随能力。原因不是它"不能算",而是 2-bit 等效精度下模型对编辑指令的语义理解被显著磨损。Q2_K 仍可做局部属性修改(颜色替换之类),但不适合作为默认档。
+3. **Path A 的失败几乎可以确定归因到我们 MLX pipeline 的 orchestration bug**(timestep 约定、velocity 符号、dtype 交互等),**而不是量化精度墙**。也就是说,Path A 不是"修通也撞墙"——它确实可以救;只是 Path B 已经稳定交付,Path A 现阶段降级为研究性 follow-up。
+4. **方法论反思:** §3.8 的论证当时看起来非常严密——行业证据(mlx-community 不发 4bit edit)+ 现象佐证(Path A 输出乱码)+ 机制推理(massive activation × outlier),三层递进。但实际只需要**一次便宜的对照实验**(sd.cpp 加载同一个 Q4_0 文件)就能直接证伪。这是一个很好的教训:在 LLM 量化这种现象复杂、社区数据稀疏的领域,即使看起来很强的间接证据也容易把人引向错误结论;**优先做 cheapest possible 的 falsification experiment**。
+
+**行业证据为什么误导:** mlx-community 不发 4bit edit 的真实原因可能不是"4bit 精度不够",而更可能是「edit 模型在 4bit 下 cherry-pick 难、社区调参成本高,而 mlx-community 主要服务 macOS demo 场景」之类的工程取舍。从「不存在 4bit MLX edit」直接推出「4bit 精度不够」是过度解读。
+
+**对项目方向的影响:**
+- **默认量化建议从 Q2_K 升级到 Q4_0**(注册表已同步调整)。代价是从 7.5 GB → 11.85 GB,16 GB Mac swap 更重,耗时从 14 min → 18 min;收益是 prompt 跟随能力质变。
+- **Q4_K_M(k-quant,~12.4 GB)未实测,但理论上应该比 Q4_0 还好**(outlier-aware)。留作下一轮优化候选。
+- **Path A 重新进入候选池。** 不是说要立刻回去推,但 §3.8 的"精度墙不可越"被证伪后,如果未来想做"纯 MLX 架构、不依赖外部 sd.cpp 二进制"的版本,这条路是开的。

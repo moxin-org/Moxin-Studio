@@ -674,8 +674,8 @@
             },
             {
                   "id": "qwen-image-edit-2511-sdcpp",
-                  "name": "Qwen-Image-Edit-2511 (Q2_K via sd.cpp)",
-                  "description": "Qwen-Image-Edit-2511 reference-image-conditioned editing. Q2_K k-quant transformer + Qwen2.5-VL Q4_K_M text encoder driven through stable-diffusion.cpp. k-quant is outlier-aware, so it converges on 16 GB Apple Silicon where naive 4bit MLX quantization fails (see docs/2026-05-31-...implementation-report.md §3.8). Experimental. ~14 min/edit at 512x512 with --offload-to-cpu.",
+                  "name": "Qwen-Image-Edit-2511 (Q4_0 via sd.cpp)",
+                  "description": "Qwen-Image-Edit-2511 reference-image-conditioned editing. Q4_0 transformer + Qwen2.5-VL Q4_K_M text encoder driven through stable-diffusion.cpp. Q4_0 has solid prompt-following for both attribute edits (e.g. recolor) and object-replacement edits (e.g. cats→dogs) — Q2_K loses object-replacement capability so we default to Q4_0 (see docs/2026-05-31-...implementation-report.md §8.6). Experimental. ~18 min/edit at 512x512 with --offload-to-cpu on a 16 GB Mac.",
                   "category": "image_gen",
                   "subfolder": "Qwen Image",
                   "tags": [
@@ -689,13 +689,13 @@
                   ],
                   "source": {
                         "kind": "direct_url",
-                        "url": "https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF/resolve/main/qwen-image-edit-2511-Q2_K.gguf",
+                        "url": "https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF/resolve/main/qwen-image-edit-2511-Q4_0.gguf",
                         "revision": "main"
                   },
                   "storage": {
                         "local_path": "~/.OminiX/models/qwen-image-edit-2511-sdcpp",
-                        "size_bytes": 7468022368,
-                        "size_display": "~7 GB"
+                        "size_bytes": 11852773984,
+                        "size_display": "~11 GB"
                   },
                   "runtime": {
                         "api_type": "image_generation",
@@ -706,7 +706,7 @@
                         ],
                         "supports_images": true,
                         "supports_streaming": false,
-                        "quantization": "Q2_K",
+                        "quantization": "Q4_0",
                         "inference_engine": "sdcpp"
                   },
                   "ui": {
