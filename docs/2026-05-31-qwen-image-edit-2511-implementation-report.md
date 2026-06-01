@@ -462,3 +462,54 @@ step 7: latents std=12.0, both std=13.3, cfg_diff std=1.37, v_pred std=13.4
 - **单 fix 不足以让 Path A 出图。** Path A 是多层 bug 叠加;预计还需 1-3 轮 audit + e2e 验证(每轮 30-45 min audit + ~15 min e2e 测试)才能见到收敛。
 - **本轮 OminiX-MLX / OminiX-API 改动留在工作树本地,未提交**(团队成员对这两个 sibling repo 无 commit 权限,沿用 §4 的约定)。可由有权限的同事评审后合入。
 - **Path B 仍然是 16 GB Mac 上的当前可交付路径**;Path A 的修复价值是中长期的「纯 MLX 架构」愿景,不阻塞 Moxin Studio 的发布。
+
+### 8.8 第二轮 audit — 排除三个高优先级嫌疑,Path A 暂搁(2026-06-01)
+
+§8.7.4 列出的 4 项优先怀疑面里,前 3 项本轮已逐一与 sd.cpp ground truth 做了代码级对照,**全部排除为 bug 源**:
+
+| # | 怀疑点 | MLX 现状 | sd.cpp 现状 | 结论 |
+|---|---|---|---|---|
+| A7 | `img_mod_linear` 6-way 拆分顺序 | `parts[0..5] = (shift1, scale1, gate1, shift2, scale2, gate2)`;`modulate_flex(x, shift, scale) = x*(1+scale)+shift` | `Flux::modulate(x, shift, scale) = x + x*scale + shift` —— 同一公式;`get_mod_params_vec` 与 MLX 同 6 元 chunk 顺序 | ✅ 一致,非 bug |
+| A8 | `QwenAdaLayerNormOut` (norm_out) scale/shift 拆分 | `scale = emb[.., ..half]`, `shift = emb[.., half..]`,然后 `normed*(1+scale)+shift` | `chunk(emb, 2, 0) → mods[0]=scale, mods[1]=shift`,然后 `Flux::modulate(normed, shift, scale)` —— 数学相同 | ✅ 一致,非 bug |
+| (额外) | Attention scale | `1/sqrt(head_dim) = 1/sqrt(128) ≈ 0.0884` | `Rope::attention(..., kv_scale=1/128)` —— 实际是 ggml FP16 防溢出 trick:k 先乘 1/128,attn_scale 改成 `(1/sqrt(d)) / (1/128) = sqrt(128)/128`,输出最后再乘 128 还原。**数学等价标准 1/sqrt(d_head)** | ✅ 等价,非 bug |
+
+#### 8.8.1 关键现象学复盘
+
+| 时刻 | v_pred std 轨迹 | latents std 轨迹 | 解读 |
+|---|---|---|---|
+| 修复前 | 3.3 → 1.8 (递减) | 0.99 → 1.71 (慢增长) | timestep 完全失真 (×1_000_000) → sinusoidal 高频混叠 → 时间条件失效 → 模型输出**小幅 DC**,**看似温和** |
+| 修复后 | 6.2 → 13.4 (递增) | 1.02 → 12.03 (指数增长) | timestep 正确激活 → 模型按 sigma 强力响应,但**v_pred 量级 ~6×、方向递增**(应该是临近数据时 v→0),发散更显著 |
+
+**核心观察:**「6× 量级 + 递增方向」**不是 timestep 修复引入的,是修复前就存在的**(3.3 已是 ~3× 偏大)。timestep 修复只是放大了它的可见度。
+
+#### 8.8.2 还没排除的嫌疑面 + 现实约束
+
+按验证报告(`YY/学习/北京开源商业创新营/Qwen Image Edit 2511 在 16G Mac mini M4 上接入方案验证报告.md`)§11 Step 5,继续定位需要做**「第 0 层 transformer probe」对照**:
+
+- 在 Diffusers Python 端跑同一份 Q4_0 GGUF,固定 seed
+- dump 第 0 个 transformer block 内部的所有中间张量(input hidden、norm 后、q/k/v、RoPE 后、attention scores/output、FFN output、residual 后)
+- 与 MLX 同位置的实测张量逐项对照,定位第一个分叉点
+
+**现实约束让这一步暂时跑不通:**
+
+| 约束 | 影响 |
+|---|---|
+| 16 GB Mac 跑不下 Diffusers + Qwen-Image-Edit-2511 完整 reference(典型需要 30-50 GB fp16) | 当前开发机做不了 reference 端的 probe |
+| 即便 32 GB Mac(`mlx-community/qwen-image-edit-2511-8bit` 单 transformer ~22 GB,加上 VL + VAE + activation 也吃紧)| 需要 64 GB 或 Linux + 24 GB NVIDIA 才能从容 |
+| probe + 数值对照本身要 0.5-1 天工作量,不是短轮迭代 | 即使有设备也是大块工作量,不适合"晚上随手推" |
+
+#### 8.8.3 决定:Path A 暂阅,本轮告一段落
+
+`get_timestep_embedding` 双重 ×1000 是确凿的真 bug 且已修复,**这本身就是 §3.8 被证伪之后 Path A 抢救的实质进展**;再往深处需要 Diffusers reference 的硬件门槛先达成。在此之前继续在 MLX 端瞎试 audit/probe 的边际收益已经很小(本轮排除了 3 个高优先级嫌疑后,剩余可能性散布在 60 个 transformer block 的细节里,**没有 reference 端的中间张量做锚点,定位成本会指数级上升**)。
+
+**工程结论(本轮):**
+
+- ✅ Path A 不是死路,§3.8 假说已证伪(§8.6 + §8.7)
+- ✅ 找到并修复了一处真 bug(timestep 双重 ×1000,§8.7.1)
+- ✅ 排除了 3 个高优先级次嫌疑(本节)
+- ⏸ 剩余 bug 定位**等 32 GB+ 设备 + Diffusers reference 环境**;在此之前 Path A 进度告一段落
+- 🟢 Path B 仍是 Moxin Studio 在 16 GB Mac 上的可交付路径,不受 Path A 进度影响
+
+**本节方法论备注:** 这次 audit 的价值不在于"修通了 Path A",而在于:
+1. 把 §3.8 那种「行业证据 + 现象学」的间接推论改为「代码对照 + 实测对照」的硬验证。每个怀疑面都给出了具体的判定理由(对照表 + 实测数值)。
+2. 当 cheap 实验空间用尽、必须升级到更贵的实验(此处 = 拿 32 GB 设备 + Diffusers reference)时,**明确停下来记录现状**比"在 16 GB 上继续盲改"更省时间。本轮花的 ~2 小时如果继续硬试,大概率会引入更多伪修复,反而把现状搞模糊。
