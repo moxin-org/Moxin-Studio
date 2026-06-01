@@ -721,7 +721,7 @@
                                     "revision": "main"
                               },
                               "storage": {
-                                    "local_path": "~/.OminiX/models/qwen-image-edit-2511-sdcpp",
+                                    "local_path": "~/.OminiX/models/qwen-image-edit-2511-sdcpp/split_files/vae",
                                     "size_bytes": 253806246,
                                     "size_display": "~242 MB"
                               }

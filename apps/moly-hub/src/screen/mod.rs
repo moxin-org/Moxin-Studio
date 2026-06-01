@@ -554,9 +554,7 @@ impl Widget for ModelHubApp {
                         let lower = path.to_lowercase();
                         if lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")
                             || lower.ends_with(".bmp") || lower.ends_with(".gif") || lower.ends_with(".webp") {
-                            self.image_edit_state.image_path = path.clone();
-                            self.view.text_input(ids!(hub_image_edit_panel.img_edit_image_path)).set_text(cx, path);
-                            self.view.redraw(cx);
+                            self.set_img_edit_image_path(cx, path.clone());
                             break;
                         }
                     }
@@ -1386,7 +1384,6 @@ impl ModelHubApp {
         if let Some(t) = self.view.text_input(ids!(hub_tts_panel.tts_content_stack.tts_text_card.card_body.tts_text_body.tts_text_input)).changed(actions)   { self.tts_state.text = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_image_panel.img_prompt)).changed(actions)     { self.image_state.prompt = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_image_panel.img_neg_prompt)).changed(actions) { self.image_state.neg_prompt = t.to_string(); }
-        if let Some(t) = self.view.text_input(ids!(hub_image_edit_panel.img_edit_image_path)).changed(actions) { self.image_edit_state.image_path = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_image_edit_panel.img_edit_prompt)).changed(actions)     { self.image_edit_state.prompt = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_prompt)).changed(actions)               { self.video_state.prompt = t.to_string(); }
     }
@@ -1425,7 +1422,7 @@ impl ModelHubApp {
             .add_filter("Image", &["jpg", "jpeg", "png", "bmp", "gif", "webp"])
             .pick_file()
         {
-            self.set_vlm_image_path(cx, path.to_string_lossy().to_string());
+            self.set_vlm_image_path(cx, normalize_picked_path(&path));
         }
     }
 
@@ -1456,6 +1453,49 @@ impl ModelHubApp {
         let image_ref = self.view.image(ids!(vlm_fullscreen_overlay.vlm_fullscreen_image));
         if Self::load_vlm_image_preview(cx, &image_ref, &self.vlm_state.image_path).is_ok() {
             self.view.view(ids!(vlm_fullscreen_overlay)).set_visible(cx, true);
+            self.view.redraw(cx);
+        }
+    }
+
+    fn pick_img_edit_image_file(&mut self, cx: &mut Cx) {
+        if let Some(path) = FileDialog::new()
+            .add_filter("Image", &["jpg", "jpeg", "png", "bmp", "gif", "webp"])
+            .pick_file()
+        {
+            self.set_img_edit_image_path(cx, normalize_picked_path(&path));
+        }
+    }
+
+    fn set_img_edit_image_path(&mut self, cx: &mut Cx, path: String) {
+        let display = Path::new(&path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or(path.as_str())
+            .to_string();
+        let preview_ref = self.view.image(ids!(hub_image_edit_panel.img_edit_image_preview));
+        let preview_loaded = Self::load_vlm_image_preview(cx, &preview_ref, &path).is_ok();
+        self.image_edit_state.image_path = path;
+        preview_ref.set_visible(cx, preview_loaded);
+        self.view
+            .view(ids!(hub_image_edit_panel.img_edit_drop_zone.img_edit_preview_fullscreen_btn))
+            .set_visible(cx, preview_loaded);
+        let drop_label = self.view.label(ids!(hub_image_edit_panel.img_edit_drop_label));
+        drop_label.set_visible(cx, !preview_loaded);
+        if !preview_loaded {
+            drop_label.set_text(cx, &display);
+        } else {
+            drop_label.set_text(cx, "");
+        }
+        self.view.redraw(cx);
+    }
+
+    fn open_img_edit_fullscreen_preview(&mut self, cx: &mut Cx) {
+        if self.image_edit_state.image_path.is_empty() {
+            return;
+        }
+        let image_ref = self.view.image(ids!(img_edit_fullscreen_overlay.img_edit_fullscreen_image));
+        if Self::load_vlm_image_preview(cx, &image_ref, &self.image_edit_state.image_path).is_ok() {
+            self.view.view(ids!(img_edit_fullscreen_overlay)).set_visible(cx, true);
             self.view.redraw(cx);
         }
     }
@@ -1502,7 +1542,7 @@ impl ModelHubApp {
             .add_filter("Audio", &["wav", "mp3", "m4a", "flac", "ogg", "aac"])
             .pick_file()
         {
-            self.set_asr_audio_path(cx, path.to_string_lossy().to_string());
+            self.set_asr_audio_path(cx, normalize_picked_path(&path));
         }
     }
 
@@ -1681,17 +1721,29 @@ impl ModelHubApp {
     }
 
     fn handle_image_edit_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        // Browse reference image
-        if self.view.button(ids!(hub_image_edit_panel.img_edit_browse_btn)).clicked(actions) {
-            if let Some(path) = FileDialog::new()
-                .add_filter("Image", &["jpg", "jpeg", "png", "bmp", "gif", "webp"])
-                .pick_file()
-            {
-                let s = path.to_string_lossy().to_string();
-                self.image_edit_state.image_path = s.clone();
-                self.view.text_input(ids!(hub_image_edit_panel.img_edit_image_path)).set_text(cx, &s);
-                self.view.redraw(cx);
-            }
+        // Reference image drop-zone interactions (click to pick, fullscreen preview)
+        let edit_fullscreen_clicked = self
+            .view
+            .view(ids!(hub_image_edit_panel.img_edit_drop_zone.img_edit_preview_fullscreen_btn))
+            .finger_down(actions)
+            .is_some();
+        if edit_fullscreen_clicked {
+            self.open_img_edit_fullscreen_preview(cx);
+        } else if self
+            .view
+            .view(ids!(hub_image_edit_panel.img_edit_drop_zone))
+            .finger_down(actions)
+            .is_some()
+        {
+            self.pick_img_edit_image_file(cx);
+        }
+        if self
+            .view
+            .button(ids!(img_edit_fullscreen_overlay.img_edit_fullscreen_close_btn))
+            .clicked(actions)
+        {
+            self.view.view(ids!(img_edit_fullscreen_overlay)).set_visible(cx, false);
+            self.view.redraw(cx);
         }
 
         // Edit button — sd.cpp models don't need API loading, just download
@@ -1804,7 +1856,7 @@ impl ModelHubApp {
                 .add_filter("Audio", &["wav", "mp3", "m4a", "flac", "ogg", "aac"])
                 .pick_file()
             {
-                let s = path.to_string_lossy().to_string();
+                let s = normalize_picked_path(&path);
                 self.view.text_input(ids!(hub_voice_panel.voice_audio_path_input)).set_text(cx, &s);
                 self.view.redraw(cx);
             }
@@ -2550,6 +2602,21 @@ impl ModelHubApp {
 
     fn call_image_edit(&mut self, cx: &mut Cx, model_id: String, image_path: String, prompt: String) {
         if self.image_edit_state.is_running { return; }
+        if image_path.trim().is_empty() {
+            self.view.label(ids!(hub_image_edit_panel.img_edit_status)).set_text(cx, "Pick a reference image first.");
+            self.view.redraw(cx);
+            return;
+        }
+        if !Path::new(&image_path).exists() {
+            self.view.label(ids!(hub_image_edit_panel.img_edit_status)).set_text(cx, &format!("Reference image not found: {}", image_path));
+            self.view.redraw(cx);
+            return;
+        }
+        if prompt.trim().is_empty() {
+            self.view.label(ids!(hub_image_edit_panel.img_edit_status)).set_text(cx, "Enter an edit prompt first.");
+            self.view.redraw(cx);
+            return;
+        }
         if prompt.is_empty() {
             self.view.label(ids!(hub_image_edit_panel.img_edit_status)).set_text(cx, "Enter an edit instruction.");
             return;
@@ -2586,8 +2653,13 @@ impl ModelHubApp {
                 Err(e) => { let _ = tx.send(Err(format!("Failed to read image: {}", e))); return; }
             };
 
+            // 30 min timeout: Qwen-Image-Edit-2511 via sd.cpp on 16 GB Apple
+            // Silicon is swap-bound and routinely takes ~14–15 min end-to-end
+            // (model load + 20 sampling steps + VAE decode). 10 min was too
+            // tight and caused premature client-side disconnects with the
+            // backend continuing in the background.
             let client = reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(600)).build().unwrap();
+                .timeout(std::time::Duration::from_secs(1800)).build().unwrap();
             let body = serde_json::json!({
                 "model": model_id,
                 "prompt": prompt,
@@ -3010,6 +3082,45 @@ impl ModelHubApp {
 
 // ─── Filesystem helpers ───────────────────────────────────────────────────────
 
+/// rfd 0.15 on macOS occasionally returns percent-encoded paths when the
+/// system file picker hands back an NSURL absoluteString instead of the
+/// plain filesystem path (seen with filenames containing spaces from
+/// `~/Downloads/`). The raw string then fails `fs::read` with ENOENT. If
+/// the raw path is missing but a percent-decoded version exists, use that.
+fn normalize_picked_path(p: &Path) -> String {
+    let raw = p.to_string_lossy().to_string();
+    if p.exists() {
+        return raw;
+    }
+    if let Some(decoded) = percent_decode_path(&raw) {
+        if Path::new(&decoded).exists() {
+            return decoded;
+        }
+    }
+    raw
+}
+
+fn percent_decode_path(s: &str) -> Option<String> {
+    if !s.contains('%') {
+        return None;
+    }
+    let bytes = s.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let h = (bytes[i + 1] as char).to_digit(16)?;
+            let l = (bytes[i + 2] as char).to_digit(16)?;
+            out.push((h * 16 + l) as u8);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).ok()
+}
+
 fn scan_state(model: &RegistryModel) -> ModelUiState {
     let p = expand_tilde(&model.storage.local_path);
     let path = Path::new(&p);
@@ -3271,5 +3382,35 @@ mod tests {
     fn derives_audio_display_name_from_path() {
         assert_eq!(audio_display_name("/Users/alana/Downloads/demo clip.wav"), "demo clip.wav");
         assert_eq!(audio_display_name("standalone.mp3"), "standalone.mp3");
+    }
+
+    #[test]
+    fn percent_decode_path_decodes_space() {
+        assert_eq!(
+            percent_decode_path("/Users/x/Downloads/Weixin%20Image.jpg").as_deref(),
+            Some("/Users/x/Downloads/Weixin Image.jpg")
+        );
+    }
+
+    #[test]
+    fn percent_decode_path_returns_none_when_nothing_to_decode() {
+        assert!(percent_decode_path("/Users/x/Downloads/plain.jpg").is_none());
+    }
+
+    #[test]
+    fn percent_decode_path_handles_multiple_sequences() {
+        // %E4%B8%AD%E6%96%87 = "中文" (UTF-8)
+        assert_eq!(
+            percent_decode_path("/a/%E4%B8%AD%E6%96%87.png").as_deref(),
+            Some("/a/中文.png")
+        );
+    }
+
+    #[test]
+    fn percent_decode_path_preserves_truncated_escape() {
+        // Trailing "%2" with no third char — must not panic via slice OOB.
+        // Truncated escape is preserved literally; caller will fall back to
+        // the raw path when `exists()` returns false.
+        assert_eq!(percent_decode_path("/a/foo%2").as_deref(), Some("/a/foo%2"));
     }
 }
