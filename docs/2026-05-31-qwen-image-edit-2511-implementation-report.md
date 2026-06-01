@@ -389,3 +389,76 @@ Path B GUI 接入后,在真实用户操作下用同一张参考图(5 只猫)和�
 - **默认量化建议从 Q2_K 升级到 Q4_0**(注册表已同步调整)。代价是从 7.5 GB → 11.85 GB,16 GB Mac swap 更重,耗时从 14 min → 18 min;收益是 prompt 跟随能力质变。
 - **Q4_K_M(k-quant,~12.4 GB)未实测,但理论上应该比 Q4_0 还好**(outlier-aware)。留作下一轮优化候选。
 - **Path A 重新进入候选池。** 不是说要立刻回去推,但 §3.8 的"精度墙不可越"被证伪后,如果未来想做"纯 MLX 架构、不依赖外部 sd.cpp 二进制"的版本,这条路是开的。
+
+### 8.7 Path A 修复初探(2026-06-01)— 修复 timestep 双重 ×1000,揭出下一层 bug
+
+§8.6 把 §3.8 假说证伪之后,顺势把验证报告(`YY/学习/北京开源商业创新营/Qwen Image Edit 2511 在 16G Mac mini M4 上接入方案验证报告.md`)第 6 节的「情况 A」走通了 — 该报告也已经把 sd.cpp + Q4_0 出图当作 Step 1,结论是 Rust/MLX pipeline 有实现错误,建议做 scheduler 单步对照 + 第 0 层 transformer probe。本节记录第一轮修复尝试的过程与结果。
+
+#### 8.7.1 第一处 bug:timestep 双重 ×1000
+
+**对照 sd.cpp 后定位的根因:**
+
+| 实现 | caller 传入模型的 timestep | 内部 embedder 是否再乘 |
+|---|---|---|
+| sd.cpp `QwenTimestepProjEmbeddings` | `sigma_to_t(sigma) = shifted_sigma × 1000` | ❌(`ggml_ext_timestep_embedding(..., time_factor=1.0)`)|
+| Diffusers `QwenImagePipeline` | `shifted_sigma` ∈ [0, 1] | ✅(`Timesteps(..., scale=1000)`)|
+| **OminiX-MLX(修复前)** | **`unshifted_t × 1000`**(! linear 1→1/N 未做 flow-shift,且已乘 1000)| **✅(内部又乘 1000)** |
+| **OminiX-MLX(修复后)** | `shifted_sigma × 1000`(sd.cpp 同款约定) | ❌ |
+
+修复前的净效果:模型实际收到 `unshifted_t × 1_000_000` —— sinusoidal positional encoding 完全跑出训练分布,等价于把时间条件**取消掉**(高频通道严重混叠成随机值)。
+
+**修改点(本地未提交,留在 OminiX-MLX / OminiX-API 工作树):**
+
+| 文件 | 改动 |
+|---|---|
+| `OminiX-MLX/qwen-image-mlx/src/qwen_quantized.rs::get_timestep_embedding` | 删掉内部 `t × 1000`,改为通用 sinusoidal,要求 caller 传 `shifted_sigma × 1000` |
+| `OminiX-MLX/qwen-image-mlx/examples/edit_e2e.rs` | denoise 循环 `t * 1000` → `scheduler.sigmas()[idx] * 1000` |
+| `OminiX-API/src/engines/image.rs::generate_qwen_image_edit` | 同上 |
+| `OminiX-API/src/engines/image.rs::generate_qwen_image` | 同上(t2i 路径同病) |
+
+#### 8.7.2 修复后行为变化(256×256 / 8 steps / Q4_0 / MLX edit_e2e)
+
+| 时刻 | model_t 输入 | v_pred std 轨迹 | latents std 轨迹 | 输出 |
+|---|---|---|---|---|
+| **修复前** | `unshifted_t × 1_000_000`(乱)| 3.3→2.9→2.6→1.8(递减)| 0.99→1.71(慢增长) | 带空间结构的彩色乱码 |
+| **修复后** | `shifted_sigma × 1000` = 1000, 954, 900, 833, 750, 643, 500, 300 ✓ | **6.2→13.4(递增)** | **1.02→12.03(指数增长)** | 高频规则的黄黑格子伪图 |
+
+`model_t` 轨迹**完全正确**(精确按 shift=3 的 FlowMatch 公式走 sigma_max → 0),证明 timestep 这一处的 bug 修对了。但 e2e 出图比修复前**更差** — 这并不矛盾,见下节。
+
+#### 8.7.3 为什么"修对了"反而图更差?
+
+修复前模型收到 1000× 失真的 timestep → sinusoidal 高频通道完全混叠 → 时间条件**实际失效** → 模型退化为"近似时间无关",每步输出一个差不多的小幅 DC velocity → latents 慢慢漂(std 0.99→1.71)、表面上"看着收敛"但实际什么都没编辑。
+
+修复后时间条件正确激活 → 模型按 sigma=1.0(纯噪声)→ sigma=0.3(临近数据)强力预测「从噪声到数据」的 velocity → 但 **velocity 的方向 / 缩放比例还有 bug** → 每步加了一个量级 ~10 的大方向更新 → latents 在 8 步内从 std=1 涨到 12,VAE decode 拿到的 latent 已远离训练分布 → 出周期性高频伪图。
+
+**所以这是一个 debug 推进信号 (bug shifted, not bug eliminated)**:消除了"掩盖问题的 timestep bug",暴露了真正的"量级/方向"bug。
+
+#### 8.7.4 下一层 bug 的现象学定位
+
+修复后跑 8 步的中间统计:
+
+```
+step 0: latents std=1.02, both std=6.2, cfg_diff std=0.53, v_pred std=6.2
+step 7: latents std=12.0, both std=13.3, cfg_diff std=1.37, v_pred std=13.4
+```
+
+观察:
+1. **step 0 v_pred std ≈ 6.2,但 latents (=sample=noise) std ≈ 1.02。** 正确 FlowMatch 训练下 `v_pred ≈ x_noise - x_data ≈ same magnitude as noise ≈ 1`。模型输出**整整大了一个量级 ~6×**。
+2. **CFG 不是放大器:** `cfg_diff std` 0.5-1.4,真正大的是 `uncond` 自身(等于 `both` 的 std)。也就是说**模型的 raw forward 输出就过大**,与 CFG 公式无关。
+3. **方向问题:** v_pred std 应当随 sigma 减小而**递减**(越接近数据,需要的更新越小);我们的实测是**递增**(6.2→13.4),意味着模型对低 sigma 的 prediction 反而更激进 —— 可能是被某个 modulation 参数错位放大,也可能是符号问题。
+
+**下一轮怀疑面(按优先级):**
+
+| # | 位置 | 怀疑点 | 为什么 |
+|---|---|---|---|
+| 1 | `prepare_img_mod_edit` / Diffusers `QwenImageTransformerBlock` | `img_mod_linear` 输出 `[2, 6*dim]` 的 6 元拆分顺序(shift1/scale1/gate1/shift2/scale2/gate2 vs scale1/shift1/gate1/…)| Diffusers → ggml 移植里最常见的隐形 bug;模型输出 ~6× 过大恰好是把 `scale` 当成 `shift` 的典型表现(scale 默认接近 1,误用为 shift 后会平移整个分布)|
+| 2 | `forward_edit` 末尾 `norm_out.forward(hidden_states, real_temb)` | AdaLayerNormContinuous 的 conditioning 拆分(shift/scale 顺序、是否需要 `+1`、Diffusers vs sd.cpp 是否一致)| 仅有这一处用 `real_temb` 而非 dual temb,与其余 60 层不对称 |
+| 3 | `forward_edit` residual 累积的 BF16 dtype | 内部用 BF16,FP32 仅在 norm_out 入口 / proj_out 输出处转换 | 60 层叠加 BF16 误差 + 上面 6× 误差放大,可能造成额外指数发散 |
+| 4 | RoPE / pack / position_ids 一致性 | sd.cpp 与 MLX 之间的 H/W flatten 顺序、channel interleave、ref token 拼接顺序 | 报告原本列为 #3 嫌疑;留作 fallback 检查 |
+
+#### 8.7.5 工程结论
+
+- **timestep 修复确实是 Path A 应当修的真 bug。** 它原本掩盖了下层问题,修掉之后下层暴露,这是预期的。
+- **单 fix 不足以让 Path A 出图。** Path A 是多层 bug 叠加;预计还需 1-3 轮 audit + e2e 验证(每轮 30-45 min audit + ~15 min e2e 测试)才能见到收敛。
+- **本轮 OminiX-MLX / OminiX-API 改动留在工作树本地,未提交**(团队成员对这两个 sibling repo 无 commit 权限,沿用 §4 的约定)。可由有权限的同事评审后合入。
+- **Path B 仍然是 16 GB Mac 上的当前可交付路径**;Path A 的修复价值是中长期的「纯 MLX 架构」愿景,不阻塞 Moxin Studio 的发布。
