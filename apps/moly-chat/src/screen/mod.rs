@@ -431,14 +431,6 @@ pub struct ChatApp {
     #[rust]
     mode_busy: bool,
 
-    /// VLM: path to the selected image file
-    #[rust]
-    vlm_image_path: String,
-
-    /// VLM: base64-encoded image (ready for API)
-    #[rust]
-    vlm_image_b64: Option<String>,
-
     /// Image edit: base64-encoded reference image (set by file picker)
     #[rust]
     image_ref_b64: Option<String>,
@@ -1061,57 +1053,6 @@ impl Widget for ChatApp {
         self.view.view(ids!(header)).handle_event(cx, event, scope);
         self.view.view(ids!(mode_controls)).handle_event(cx, event, scope);
 
-        // ── VLM image drag-and-drop ──────────────────────────────────────────
-        if self.chat_mode == ChatMode::Vlm {
-            let drop_zone_area = self.view.view(ids!(mode_controls.vlm_controls.vlm_drop_zone)).area();
-            match event.drag_hits(cx, drop_zone_area) {
-                DragHit::Drag(e) => {
-                    match e.state {
-                        DragState::In | DragState::Over => {
-                            *e.response.lock().unwrap() = DragResponse::Copy;
-                            self.view.view(ids!(mode_controls.vlm_controls.vlm_drop_zone))
-                                .apply_over(cx, live! { draw_bg: { hover: (1.0) } });
-                            self.view.redraw(cx);
-                        }
-                        DragState::Out => {
-                            self.view.view(ids!(mode_controls.vlm_controls.vlm_drop_zone))
-                                .apply_over(cx, live! { draw_bg: { hover: (0.0) } });
-                            self.view.redraw(cx);
-                        }
-                    }
-                }
-                DragHit::Drop(e) => {
-                    self.view.view(ids!(mode_controls.vlm_controls.vlm_drop_zone))
-                        .apply_over(cx, live! { draw_bg: { hover: (0.0) } });
-                    for item in e.items.iter() {
-                        if let DragItem::FilePath { path, .. } = item {
-                            let lower = path.to_lowercase();
-                            if lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")
-                                || lower.ends_with(".bmp") || lower.ends_with(".gif") || lower.ends_with(".webp") {
-                                let decoded_path = Self::url_decode_path(path);
-                                if let Ok(bytes) = std::fs::read(&decoded_path) {
-                                    use base64::Engine;
-                                    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
-                                    self.vlm_image_b64 = Some(b64);
-                                    self.vlm_image_path = decoded_path.clone();
-                                    let filename = std::path::Path::new(&decoded_path)
-                                        .file_name()
-                                        .map(|f| f.to_string_lossy().to_string())
-                                        .unwrap_or_else(|| decoded_path.clone());
-                                    self.view.label(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_file_label))
-                                        .set_text(cx, &filename);
-                                    Self::load_vlm_preview(&self.view, cx, &bytes, &decoded_path);
-                                    self.view.redraw(cx);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-
         // ── ASR audio drag-and-drop ──────────────────────────────────────────
         if self.chat_mode == ChatMode::Asr {
             let drop_zone_area = self.view.view(ids!(mode_controls.asr_controls.asr_drop_zone)).area();
@@ -1201,29 +1142,14 @@ impl Widget for ChatApp {
         self.view.view(ids!(main_content.welcome_overlay)).set_visible(cx, false);
         self.view.chat(ids!(main_content.chat)).set_visible(cx, true);
 
-        // Show mode_controls bar for non-LLM modes
-        let show_controls = matches!(self.chat_mode, ChatMode::Vlm | ChatMode::Tts | ChatMode::ImageGen | ChatMode::Asr | ChatMode::VideoGen);
+        // Show mode_controls bar for non-LLM, non-VLM modes. VLM uses the
+        // chat prompt input's built-in attachment picker for image upload,
+        // so no dedicated header panel is needed.
+        let show_controls = matches!(self.chat_mode, ChatMode::Tts | ChatMode::ImageGen | ChatMode::Asr | ChatMode::VideoGen);
         self.view.view(ids!(mode_controls)).set_visible(cx, show_controls);
-        self.view.view(ids!(mode_controls.vlm_controls)).set_visible(cx, self.chat_mode == ChatMode::Vlm);
         self.view.view(ids!(mode_controls.tts_controls)).set_visible(cx, self.chat_mode == ChatMode::Tts);
         self.view.view(ids!(mode_controls.image_controls)).set_visible(cx, self.chat_mode == ChatMode::ImageGen);
         self.view.view(ids!(mode_controls.asr_controls)).set_visible(cx, self.chat_mode == ChatMode::Asr);
-
-        // Show VLM image preview/clear when an image is selected
-        if self.chat_mode == ChatMode::Vlm {
-            let has_image = self.vlm_image_b64.is_some();
-            self.view.view(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_preview))
-                .set_visible(cx, has_image);
-            self.view.view(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_clear_btn))
-                .set_visible(cx, has_image);
-            if has_image {
-                self.view.view(ids!(mode_controls.vlm_controls.vlm_drop_zone))
-                    .set_visible(cx, false);
-            } else {
-                self.view.view(ids!(mode_controls.vlm_controls.vlm_drop_zone))
-                    .set_visible(cx, true);
-            }
-        }
 
         // Show ASR play/clear buttons when audio file is selected
         if self.chat_mode == ChatMode::Asr {
@@ -1400,30 +1326,6 @@ impl WidgetMatchEvent for ChatApp {
 
         // ── Mode controls bar handlers ────────────────────────────────────
 
-        // VLM: Browse image button
-        if self.view.view(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_browse_btn))
-            .finger_down(&actions).is_some()
-        {
-            self.handle_vlm_browse(cx);
-        }
-
-        // VLM: Clear image button
-        if self.view.view(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_clear_btn))
-            .finger_down(&actions).is_some()
-        {
-            self.vlm_image_path.clear();
-            self.vlm_image_b64 = None;
-            self.view.label(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_file_label))
-                .set_text(cx, "");
-            self.view.image(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_preview))
-                .set_visible(cx, false);
-            self.view.view(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_clear_btn))
-                .set_visible(cx, false);
-            self.view.view(ids!(mode_controls.vlm_controls.vlm_drop_zone))
-                .set_visible(cx, true);
-            self.view.redraw(cx);
-        }
-
         // ASR: Browse/upload audio button
         if self.view.view(ids!(mode_controls.asr_controls.asr_file_row.asr_browse_btn))
             .finger_down(&actions).is_some()
@@ -1561,8 +1463,6 @@ impl ChatApp {
             self.chat_mode = new_mode;
             // Reset mode-specific state
             self.asr_file_path.clear();
-            self.vlm_image_path.clear();
-            self.vlm_image_b64 = None;
             self.image_ref_b64 = None;
             self.image_ref_path.clear();
             self.mode_rx = None;
@@ -1769,23 +1669,6 @@ impl ChatApp {
         self.view.redraw(cx);
     }
 
-    /// Get WAV file duration in seconds from file header
-    fn load_vlm_preview(view: &View, cx: &mut Cx, bytes: &[u8], path: &str) {
-        let preview = view.image(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_preview));
-        preview.set_visible(cx, true);
-        let lower = path.to_lowercase();
-        let result = if lower.ends_with(".jpg") || lower.ends_with(".jpeg") {
-            preview.load_jpg_from_data(cx, bytes)
-        } else if lower.ends_with(".png") {
-            preview.load_png_from_data(cx, bytes)
-        } else {
-            preview.load_image_file_by_path(cx, std::path::Path::new(path))
-        };
-        if let Err(e) = result {
-            ::log::warn!("Failed to load VLM preview: {:?}", e);
-        }
-    }
-
     fn url_decode_path(path: &str) -> String {
         let mut result = Vec::new();
         let bytes = path.as_bytes();
@@ -1839,29 +1722,6 @@ impl ChatApp {
                 }
             }
         });
-    }
-
-    /// VLM: Open image file browser dialog
-    fn handle_vlm_browse(&mut self, _cx: &mut Cx) {
-        if self.file_picker_rx.is_some() { return; }
-        let (tx, rx) = mpsc::channel();
-        std::thread::spawn(move || {
-            let output = std::process::Command::new("osascript")
-                .args(["-e", "POSIX path of (choose file of type {\"public.image\"} with prompt \"Select image\")"])
-                .output();
-            match output {
-                Ok(out) => {
-                    let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                    if !path.is_empty() {
-                        tx.send(Ok(path)).ok();
-                    } else {
-                        tx.send(Err("Cancelled".to_string())).ok();
-                    }
-                }
-                Err(e) => { tx.send(Err(e.to_string())).ok(); }
-            }
-        });
-        self.file_picker_rx = Some(rx);
     }
 
     /// ASR: Open file browser dialog
@@ -1924,19 +1784,6 @@ impl ChatApp {
                 .unwrap_or_else(|| path.clone());
 
             match self.chat_mode {
-                ChatMode::Vlm => {
-                    let decoded = Self::url_decode_path(&path);
-                    if let Ok(bytes) = std::fs::read(&decoded) {
-                        use base64::Engine;
-                        let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
-                        self.vlm_image_b64 = Some(b64);
-                        self.vlm_image_path = decoded.clone();
-                        self.view.label(ids!(mode_controls.vlm_controls.vlm_file_row.vlm_file_label))
-                            .set_text(cx, &filename);
-                        Self::load_vlm_preview(&self.view, cx, &bytes, &decoded);
-                        self.view.redraw(cx);
-                    }
-                }
                 ChatMode::ImageGen => {
                     if let Ok(bytes) = std::fs::read(&path) {
                         use base64::Engine;
@@ -2071,25 +1918,18 @@ impl ChatApp {
 
         if user_text.is_empty() { return; }
 
-        // Two ways the user can supply an image:
-        //   1. The custom VLM drop-zone / Browse button in mode_controls
-        //      (stored as base64 in self.vlm_image_b64, mime assumed jpeg)
-        //   2. The chat prompt input's attachment picker
-        //      (stored as Attachment on the user message; mime in content_type)
-        // Pre-encoded b64 is taken as-is (jpeg). Otherwise we'll read the
-        // first image attachment inside the worker thread.
-        let preencoded_jpeg_b64 = self.vlm_image_b64.clone();
-        let image_attachment = if preencoded_jpeg_b64.is_some() {
-            None
-        } else {
-            user_attachments.into_iter().find(|a| a.is_image() && a.is_available())
-        };
+        // The user supplies the image through the chat prompt input's
+        // built-in attachment picker (paperclip button). We pick the first
+        // image attachment that's available.
+        let image_attachment = user_attachments
+            .into_iter()
+            .find(|a| a.is_image() && a.is_available());
 
         self.mode_busy = true;
 
-        // No image from either source → short-circuit with a friendly reply
-        // instead of hitting the server (which would 500 on text-only input).
-        if preencoded_jpeg_b64.is_none() && image_attachment.is_none() {
+        // No image attached → short-circuit with a friendly reply instead of
+        // hitting the server (which would 500 on text-only input).
+        let Some(image_attachment) = image_attachment else {
             let (tx, rx) = mpsc::channel();
             tx.send(Ok(
                 "Please attach an image first — Vision-Language models need an image to respond."
@@ -2097,22 +1937,14 @@ impl ChatApp {
             )).ok();
             self.mode_rx = Some(rx);
             return;
-        }
+        };
 
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
             let result = (|| -> Result<String, String> {
-                // Resolve the image to (mime, base64). Drop-zone path is already
-                // jpeg+base64; attachment path is read here on the worker thread.
-                let (mime, b64) = if let Some(b64) = preencoded_jpeg_b64 {
-                    ("image/jpeg".to_string(), b64)
-                } else {
-                    let att = image_attachment.expect("guarded above");
-                    let mime = att.content_type_or_octet_stream().to_string();
-                    let b64 = futures::executor::block_on(att.read_base64())
-                        .map_err(|e| format!("reading image attachment: {}", e))?;
-                    (mime, b64)
-                };
+                let mime = image_attachment.content_type_or_octet_stream().to_string();
+                let b64 = futures::executor::block_on(image_attachment.read_base64())
+                    .map_err(|e| format!("reading image attachment: {}", e))?;
 
                 let client = reqwest::blocking::Client::builder()
                     .timeout(std::time::Duration::from_secs(120))
