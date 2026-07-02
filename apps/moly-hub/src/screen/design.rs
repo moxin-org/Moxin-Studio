@@ -2111,12 +2111,166 @@ live_design! {
                 <View> {
                     width: Fill, height: Fit
                     flow: Down
-                    padding: {left: 30, right: 30, top: 0, bottom: 28}
+                    padding: {left: 24, right: 24, top: 0, bottom: 28}
 
                     <HubInputLabel> { text: "PROMPT" margin: {top: 0, bottom: 6} }
                     vid_prompt = <HubPanelInput> {
                         height: 58
                         empty_text: "A cat walking on the beach at sunset..."
+                    }
+
+                    <HubInputLabel> { text: "NEGATIVE PROMPT" }
+                    vid_negative_prompt = <HubPanelInput> {
+                        height: 48
+                        empty_text: "blurry, low quality, deformed, extra limbs..."
+                    }
+
+                    <HubInputLabel> { text: "REFERENCE IMAGE" margin: {top: 0, bottom: 6} }
+                    vid_image_drop_zone = <View> {
+                        width: Fill, height: 132
+                        margin: {bottom: 8}
+                        padding: {left: 12, right: 12, top: 12, bottom: 12}
+                        flow: Overlay
+                        cursor: Hand
+                        event_order: Down
+                        show_bg: true
+                        draw_bg: {
+                            instance drag_over: 0.0
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                let border = mix(#d1d5db, #22a6b3, self.drag_over);
+                                let fill = mix(#f9fafb, #e6f7f9, self.drag_over);
+                                sdf.box(2.0, 2.0, self.rect_size.x - 4.0, self.rect_size.y - 4.0, 8.0);
+                                sdf.fill(border);
+                                sdf.box(3.5, 3.5, self.rect_size.x - 7.0, self.rect_size.y - 7.0, 6.5);
+                                sdf.fill(fill);
+                                return sdf.result;
+                            }
+                        }
+                        align: {x: 0.5, y: 0.5}
+
+                        vid_image_preview = <Image> {
+                            width: Fill, height: Fill
+                            visible: false
+                            fit: Smallest
+                        }
+
+                        vid_image_drop_label = <Label> {
+                            text: "Click or drag file to this area"
+                            draw_text: {
+                                color: #9ca3af
+                                text_style: { font_size: 12.0 }
+                            }
+                        }
+                    }
+
+                    <View> {
+                        width: Fill, height: Fit
+                        flow: Right
+                        align: {y: 0.5}
+                        margin: {bottom: 10}
+                        vid_generate_frame_btn = <HubActionButton> {
+                            text: "Generate First Frame"
+                            width: Fit
+                            height: 34
+                            padding: {left: 16, right: 16}
+                            margin: {right: 8}
+                        }
+                        <View> { width: Fill }
+                        vid_image_clear_btn = <HubActionButton> {
+                            text: "Clear"
+                            width: Fit
+                            height: 34
+                            visible: false
+                            padding: {left: 16, right: 16}
+                            margin: {right: 0}
+                        }
+                    }
+
+                    <HubInputLabel> { text: "QUALITY PRESET" }
+                    <View> {
+                        width: Fill, height: Fit
+                        flow: Right
+                        spacing: 8
+                        margin: {bottom: 8}
+                        vid_preset_fast = <HubActionButton> {
+                            text: "Fast"
+                            width: Fit
+                            height: 36
+                            padding: {left: 16, right: 16}
+                            margin: {right: 0}
+                        }
+                        vid_preset_balanced = <HubActionButton> {
+                            text: "Balanced"
+                            width: Fit
+                            height: 36
+                            padding: {left: 16, right: 16}
+                            margin: {right: 0}
+                        }
+                        vid_preset_quality = <HubActionButton> {
+                            text: "Quality"
+                            width: Fit
+                            height: 36
+                            padding: {left: 16, right: 16}
+                            margin: {right: 0}
+                        }
+                    }
+
+                    <View> {
+                        width: Fill, height: Fit
+                        flow: Right
+                        spacing: 10
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            <HubInputLabel> { text: "RESOLUTION" }
+                            vid_resolution = <HubPanelInput> {
+                                height: 38
+                                empty_text: "640x384"
+                            }
+                        }
+                        <View> {
+                            width: 116, height: Fit
+                            flow: Down
+                            <HubInputLabel> { text: "FRAMES" }
+                            vid_frames = <HubPanelInput> {
+                                height: 38
+                                empty_text: "81"
+                            }
+                        }
+                    }
+
+                    <View> {
+                        width: Fill, height: Fit
+                        flow: Right
+                        spacing: 10
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            <HubInputLabel> { text: "STEPS" }
+                            vid_steps = <HubPanelInput> {
+                                height: 38
+                                empty_text: "40"
+                            }
+                        }
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            <HubInputLabel> { text: "GUIDANCE" }
+                            vid_guidance = <HubPanelInput> {
+                                height: 38
+                                empty_text: "5.0"
+                            }
+                        }
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            <HubInputLabel> { text: "SEED" }
+                            vid_seed = <HubPanelInput> {
+                                height: 38
+                                empty_text: "random"
+                            }
+                        }
                     }
 
                     <View> {

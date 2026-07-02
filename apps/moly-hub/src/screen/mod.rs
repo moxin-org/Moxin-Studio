@@ -47,6 +47,87 @@ fn is_supported_audio_path(path: &str) -> bool {
         || lower.ends_with(".aac")
 }
 
+fn is_supported_image_path(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    lower.ends_with(".jpg")
+        || lower.ends_with(".jpeg")
+        || lower.ends_with(".png")
+        || lower.ends_with(".bmp")
+        || lower.ends_with(".gif")
+        || lower.ends_with(".webp")
+}
+
+fn normalize_resolution(raw: &str) -> Result<String, String> {
+    let normalized = raw.trim().to_lowercase().replace(' ', "");
+    let Some((width, height)) = normalized.split_once('x') else {
+        return Err("Resolution must be WIDTHxHEIGHT.".to_string());
+    };
+    let width: i32 = width.parse().map_err(|_| "Resolution width must be a number.".to_string())?;
+    let height: i32 = height.parse().map_err(|_| "Resolution height must be a number.".to_string())?;
+    if width <= 0 || height <= 0 {
+        return Err("Resolution must be positive.".to_string());
+    }
+    Ok(format!("{}x{}", width, height))
+}
+
+fn json_error_message(value: &serde_json::Value) -> Option<String> {
+    let error = value.get("error")?;
+    if let Some(message) = error.as_str() {
+        return Some(message.to_string());
+    }
+    if let Some(message) = error.get("message").and_then(|v| v.as_str()) {
+        return Some(message.to_string());
+    }
+    Some(error.to_string())
+}
+
+fn strip_html_tags(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut in_tag = false;
+    for ch in input.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                out.push(' ');
+            }
+            _ if !in_tag => out.push(ch),
+            _ => {}
+        }
+    }
+    out
+        .replace("&quot;", "\"")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&amp;", "&")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn truncate_message(message: &str, max_chars: usize) -> String {
+    let mut chars = message.chars();
+    let truncated: String = chars.by_ref().take(max_chars).collect();
+    if chars.next().is_some() {
+        format!("{}...", truncated)
+    } else {
+        truncated
+    }
+}
+
+fn http_error_message(status: reqwest::StatusCode, text: &str) -> String {
+    let trimmed = text.trim();
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+        if let Some(message) = json_error_message(&value) {
+            return format!("HTTP {}: {}", status, truncate_message(&message, 700));
+        }
+    }
+
+    let plain = strip_html_tags(trimmed);
+    let detail = if plain.is_empty() { trimmed } else { plain.as_str() };
+    format!("HTTP {}: {}", status, truncate_message(detail, 700))
+}
+
 fn audio_display_name(path: &str) -> String {
     Path::new(path)
         .file_name()
@@ -207,11 +288,98 @@ struct ImageEditState {
     rx: Option<mpsc::Receiver<Result<String, String>>>,
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum VideoQualityPreset {
+    Fast,
+    Balanced,
+    Quality,
+}
+
+impl Default for VideoQualityPreset {
+    fn default() -> Self { Self::Balanced }
+}
+
+struct VideoPresetValues {
+    size: &'static str,
+    frames: &'static str,
+    steps: &'static str,
+    guide_scale: &'static str,
+}
+
+impl VideoQualityPreset {
+    fn values(self) -> VideoPresetValues {
+        match self {
+            Self::Fast => VideoPresetValues {
+                size: "480x320",
+                frames: "49",
+                steps: "20",
+                guide_scale: "5.0",
+            },
+            Self::Balanced => VideoPresetValues {
+                size: "640x384",
+                frames: "81",
+                steps: "40",
+                guide_scale: "5.0",
+            },
+            Self::Quality => VideoPresetValues {
+                size: "832x480",
+                frames: "81",
+                steps: "40",
+                guide_scale: "5.0",
+            },
+        }
+    }
+}
+
+struct VideoGenerationSettings {
+    prompt: String,
+    negative_prompt: String,
+    image_path: String,
+    size: String,
+    num_frames: i32,
+    steps: i32,
+    guide_scale: Option<f32>,
+    seed: Option<i64>,
+}
+
 struct VideoState {
-    prompt: String, output_path: String,
+    prompt: String,
+    negative_prompt: String,
+    image_path: String,
+    output_path: String,
+    preset: VideoQualityPreset,
+    size: String,
+    num_frames: String,
+    steps: String,
+    guide_scale: String,
+    seed: String,
     is_running: bool,
+    is_generating_first_frame: bool,
     rx: Option<mpsc::Receiver<Result<String, String>>>,
+    first_frame_rx: Option<mpsc::Receiver<Result<String, String>>>,
+}
+
+impl Default for VideoState {
+    fn default() -> Self {
+        let preset = VideoQualityPreset::default();
+        let values = preset.values();
+        Self {
+            prompt: String::new(),
+            negative_prompt: String::new(),
+            image_path: String::new(),
+            output_path: String::new(),
+            preset,
+            size: values.size.to_string(),
+            num_frames: values.frames.to_string(),
+            steps: values.steps.to_string(),
+            guide_scale: values.guide_scale.to_string(),
+            seed: String::new(),
+            is_running: false,
+            is_generating_first_frame: false,
+            rx: None,
+            first_frame_rx: None,
+        }
+    }
 }
 
 // ─── Model download state ─────────────────────────────────────────────────────
@@ -489,9 +657,7 @@ impl Widget for ModelHubApp {
                 self.view.view(ids!(hub_vlm_panel.vlm_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (0.0) } });
                 for item in e.items.iter() {
                     if let DragItem::FilePath { path, .. } = item {
-                        let lower = path.to_lowercase();
-                        if lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")
-                            || lower.ends_with(".bmp") || lower.ends_with(".gif") || lower.ends_with(".webp") {
+                        if is_supported_image_path(path) {
                             self.set_vlm_image_path(cx, path.clone());
                             break;
                         }
@@ -551,10 +717,38 @@ impl Widget for ModelHubApp {
                 self.view.view(ids!(hub_image_edit_panel.img_edit_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (0.0) } });
                 for item in e.items.iter() {
                     if let DragItem::FilePath { path, .. } = item {
-                        let lower = path.to_lowercase();
-                        if lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")
-                            || lower.ends_with(".bmp") || lower.ends_with(".gif") || lower.ends_with(".webp") {
+                        if is_supported_image_path(path) {
                             self.set_img_edit_image_path(cx, path.clone());
+                            break;
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        // ── Video first-frame/reference image drop zone ──────────────────────
+        let video_drop_area = self.view.view(ids!(hub_video_panel.vid_image_drop_zone)).area();
+        match event.drag_hits(cx, video_drop_area) {
+            DragHit::Drag(e) => {
+                match e.state {
+                    DragState::In | DragState::Over => {
+                        *e.response.lock().unwrap() = DragResponse::Copy;
+                        self.view.view(ids!(hub_video_panel.vid_image_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (1.0) } });
+                        self.view.redraw(cx);
+                    }
+                    DragState::Out => {
+                        self.view.view(ids!(hub_video_panel.vid_image_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (0.0) } });
+                        self.view.redraw(cx);
+                    }
+                }
+            }
+            DragHit::Drop(e) => {
+                self.view.view(ids!(hub_video_panel.vid_image_drop_zone)).apply_over(cx, live! { draw_bg: { drag_over: (0.0) } });
+                for item in e.items.iter() {
+                    if let DragItem::FilePath { path, .. } = item {
+                        if is_supported_image_path(path) {
+                            self.set_video_image_path(cx, normalize_picked_path(Path::new(path)));
                             break;
                         }
                     }
@@ -706,6 +900,8 @@ impl ModelHubApp {
         self.view.widget(ids!(hub_image_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
         self.view.widget(ids!(hub_image_edit_panel.hub_panel_header.panel_loading_row)).set_visible(cx, false);
         self.view.widget(ids!(hub_voice_panel)).set_visible(cx, false);
+        self.apply_video_preset(cx, self.video_state.preset);
+        self.view.button(ids!(hub_video_panel.vid_image_clear_btn)).set_visible(cx, false);
         // Init voice defaults
         self.voice_quality  = "standard".to_string();
         self.voice_language = "auto".to_string();
@@ -1386,6 +1582,12 @@ impl ModelHubApp {
         if let Some(t) = self.view.text_input(ids!(hub_image_panel.img_neg_prompt)).changed(actions) { self.image_state.neg_prompt = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_image_edit_panel.img_edit_prompt)).changed(actions)     { self.image_edit_state.prompt = t.to_string(); }
         if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_prompt)).changed(actions)               { self.video_state.prompt = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_negative_prompt)).changed(actions)      { self.video_state.negative_prompt = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_resolution)).changed(actions)           { self.video_state.size = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_frames)).changed(actions)               { self.video_state.num_frames = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_steps)).changed(actions)                { self.video_state.steps = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_guidance)).changed(actions)             { self.video_state.guide_scale = t.to_string(); }
+        if let Some(t) = self.view.text_input(ids!(hub_video_panel.vid_seed)).changed(actions)                 { self.video_state.seed = t.to_string(); }
     }
 
     fn handle_llm_actions(&mut self, cx: &mut Cx, actions: &Actions) {
@@ -1498,6 +1700,237 @@ impl ModelHubApp {
             self.view.view(ids!(img_edit_fullscreen_overlay)).set_visible(cx, true);
             self.view.redraw(cx);
         }
+    }
+
+    fn pick_video_image_file(&mut self, cx: &mut Cx) {
+        if let Some(path) = FileDialog::new()
+            .add_filter("Image", &["jpg", "jpeg", "png", "bmp", "gif", "webp"])
+            .pick_file()
+        {
+            self.set_video_image_path(cx, normalize_picked_path(&path));
+        }
+    }
+
+    fn set_video_image_path(&mut self, cx: &mut Cx, path: String) {
+        let display = Path::new(&path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or(path.as_str())
+            .to_string();
+        let preview_ref = self.view.image(ids!(hub_video_panel.vid_image_preview));
+        let preview_loaded = Self::load_vlm_image_preview(cx, &preview_ref, &path).is_ok();
+        self.video_state.image_path = path;
+        preview_ref.set_visible(cx, preview_loaded);
+        let drop_label = self.view.label(ids!(hub_video_panel.vid_image_drop_label));
+        drop_label.set_visible(cx, !preview_loaded);
+        if !preview_loaded {
+            drop_label.set_text(cx, &display);
+        } else {
+            drop_label.set_text(cx, "");
+        }
+        self.view.button(ids!(hub_video_panel.vid_image_clear_btn)).set_visible(cx, true);
+        self.view.redraw(cx);
+    }
+
+    fn clear_video_image_path(&mut self, cx: &mut Cx) {
+        self.video_state.image_path.clear();
+        self.view.image(ids!(hub_video_panel.vid_image_preview)).set_visible(cx, false);
+        self.view.label(ids!(hub_video_panel.vid_image_drop_label)).set_visible(cx, true);
+        self.view.label(ids!(hub_video_panel.vid_image_drop_label)).set_text(cx, "Click or drag file to this area");
+        self.view.button(ids!(hub_video_panel.vid_image_clear_btn)).set_visible(cx, false);
+        self.view.redraw(cx);
+    }
+
+    fn apply_video_preset(&mut self, cx: &mut Cx, preset: VideoQualityPreset) {
+        self.video_state.preset = preset;
+        let values = preset.values();
+        self.video_state.size = values.size.to_string();
+        self.video_state.num_frames = values.frames.to_string();
+        self.video_state.steps = values.steps.to_string();
+        self.video_state.guide_scale = values.guide_scale.to_string();
+
+        self.view.text_input(ids!(hub_video_panel.vid_resolution)).set_text(cx, &self.video_state.size);
+        self.view.text_input(ids!(hub_video_panel.vid_frames)).set_text(cx, &self.video_state.num_frames);
+        self.view.text_input(ids!(hub_video_panel.vid_steps)).set_text(cx, &self.video_state.steps);
+        self.view.text_input(ids!(hub_video_panel.vid_guidance)).set_text(cx, &self.video_state.guide_scale);
+        self.view.text_input(ids!(hub_video_panel.vid_seed)).set_text(cx, &self.video_state.seed);
+        self.sync_video_preset_buttons(cx);
+        self.view.redraw(cx);
+    }
+
+    fn sync_video_preset_buttons(&mut self, cx: &mut Cx) {
+        let fast = if self.video_state.preset == VideoQualityPreset::Fast { 1.0_f64 } else { 0.0_f64 };
+        let balanced = if self.video_state.preset == VideoQualityPreset::Balanced { 1.0_f64 } else { 0.0_f64 };
+        let quality = if self.video_state.preset == VideoQualityPreset::Quality { 1.0_f64 } else { 0.0_f64 };
+        self.view.view(ids!(hub_video_panel.vid_preset_fast)).apply_over(cx, live! {
+            draw_bg: { purple: (fast) }
+        });
+        self.view.view(ids!(hub_video_panel.vid_preset_balanced)).apply_over(cx, live! {
+            draw_bg: { purple: (balanced) }
+        });
+        self.view.view(ids!(hub_video_panel.vid_preset_quality)).apply_over(cx, live! {
+            draw_bg: { purple: (quality) }
+        });
+    }
+
+    fn video_generation_settings(&self) -> Result<VideoGenerationSettings, String> {
+        let prompt = self.video_state.prompt.trim().to_string();
+        if prompt.is_empty() {
+            return Err("Enter a prompt.".to_string());
+        }
+
+        let size = normalize_resolution(&self.video_state.size)?;
+
+        let num_frames: i32 = self.video_state.num_frames.trim()
+            .parse()
+            .map_err(|_| "Frames must be a number.".to_string())?;
+        if num_frames <= 0 {
+            return Err("Frames must be positive.".to_string());
+        }
+
+        let steps: i32 = self.video_state.steps.trim()
+            .parse()
+            .map_err(|_| "Steps must be a number.".to_string())?;
+        if steps <= 0 {
+            return Err("Steps must be positive.".to_string());
+        }
+
+        let guide_scale = {
+            let raw = self.video_state.guide_scale.trim();
+            if raw.is_empty() {
+                None
+            } else {
+                let value: f32 = raw.parse().map_err(|_| "Guidance must be a number.".to_string())?;
+                if value <= 0.0 {
+                    return Err("Guidance must be positive.".to_string());
+                }
+                Some(value)
+            }
+        };
+
+        let seed = {
+            let raw = self.video_state.seed.trim();
+            if raw.is_empty() {
+                None
+            } else {
+                Some(raw.parse().map_err(|_| "Seed must be an integer.".to_string())?)
+            }
+        };
+
+        Ok(VideoGenerationSettings {
+            prompt,
+            negative_prompt: self.video_state.negative_prompt.trim().to_string(),
+            image_path: self.video_state.image_path.trim().to_string(),
+            size,
+            num_frames,
+            steps,
+            guide_scale,
+            seed,
+        })
+    }
+
+    fn select_video_first_frame_model(&self) -> Result<RegistryModel, String> {
+        let Some(registry) = &self.registry else {
+            return Err("Model registry not loaded yet.".to_string());
+        };
+
+        let mut candidates: Vec<&RegistryModel> = registry.models.iter()
+            .filter(|model| model.category == RegistryCategory::ImageGen)
+            .filter(|model| model.ui.panel_type == PanelType::ImageGeneration)
+            .filter(|model| self.model_states.get(&model.id).copied() == Some(ModelUiState::Downloaded))
+            .collect();
+
+        candidates.sort_by_key(|model| {
+            let haystack = format!("{} {} {}", model.id, model.name, model.runtime.api_model_id).to_lowercase();
+            let rank = if haystack.contains("qwen-image") {
+                0
+            } else if haystack.contains("flux") {
+                1
+            } else if haystack.contains("zimage") {
+                2
+            } else {
+                3
+            };
+            (rank, model.name.clone())
+        });
+
+        candidates
+            .into_iter()
+            .next()
+            .cloned()
+            .ok_or_else(|| "Download an image generation model first.".to_string())
+    }
+
+    fn call_video_first_frame(&mut self, cx: &mut Cx, model: RegistryModel, prompt: String, negative_prompt: String, size: String) {
+        if self.video_state.is_generating_first_frame { return; }
+        self.video_state.is_generating_first_frame = true;
+        self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, &format!("Generating first frame with {}...", model.name));
+        self.view.redraw(cx);
+
+        let slug: String = prompt.chars()
+            .take(40)
+            .map(|c| if c.is_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+            .collect::<String>()
+            .trim_matches('-')
+            .to_string();
+        let slug = if slug.is_empty() { "first-frame".to_string() } else { slug };
+        let slug = slug.split('-').filter(|s| !s.is_empty()).collect::<Vec<_>>().join("-");
+        let out_path = format!("/tmp/ominix-first-frame-{}.png", slug);
+
+        let api_model_id = model.runtime.api_model_id;
+        let image_prompt = format!(
+            "First frame for a video. {}, front-facing subject, clear pose, coherent anatomy, sharp detailed image.",
+            prompt
+        );
+
+        let (tx, rx) = mpsc::channel();
+        self.video_state.first_frame_rx = Some(rx);
+        std::thread::spawn(move || {
+            if let Err(e) = ensure_server_running()
+                .and_then(|()| ModelRuntimeClient::localhost().load_model(&api_model_id, "image"))
+            {
+                let _ = tx.send(Err(format!("Failed to load image model: {}", e)));
+                return;
+            }
+
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(900)).build().unwrap();
+            let mut body = serde_json::json!({
+                "model": api_model_id,
+                "prompt": image_prompt,
+                "n": 1,
+                "size": size,
+                "response_format": "b64_json"
+            });
+            if !negative_prompt.is_empty() {
+                body["negative_prompt"] = serde_json::json!(negative_prompt);
+            }
+
+            let result = client.post("http://localhost:8080/v1/images/generations")
+                .json(&body).send()
+                .map_err(|e| e.to_string())
+                .and_then(|r| {
+                    let status = r.status();
+                    let text = r.text().map_err(|e| e.to_string())?;
+                    if !status.is_success() {
+                        return Err(http_error_message(status, &text));
+                    }
+                    serde_json::from_str::<serde_json::Value>(&text).map_err(|e| e.to_string())
+                })
+                .and_then(|v| {
+                    if let Some(message) = json_error_message(&v) {
+                        return Err(format!("API error: {}", message));
+                    }
+                    let b64 = v["data"][0]["b64_json"].as_str()
+                        .ok_or_else(|| format!("No image data in response: {}", v))?;
+                    let bytes = base64::engine::general_purpose::STANDARD.decode(b64)
+                        .map_err(|e| e.to_string())?;
+                    std::fs::write(&out_path, &bytes).map_err(|e| e.to_string())?;
+                    Ok(out_path)
+                });
+            let _ = tx.send(result);
+        });
+        cx.new_next_frame();
     }
 
     fn load_vlm_image_preview(cx: &mut Cx, preview_ref: &ImageRef, path: &str) -> Result<(), ImageError> {
@@ -1770,6 +2203,52 @@ impl ModelHubApp {
     }
 
     fn handle_video_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        if self.view.button(ids!(hub_video_panel.vid_preset_fast)).clicked(actions) {
+            self.apply_video_preset(cx, VideoQualityPreset::Fast);
+        }
+        if self.view.button(ids!(hub_video_panel.vid_preset_balanced)).clicked(actions) {
+            self.apply_video_preset(cx, VideoQualityPreset::Balanced);
+        }
+        if self.view.button(ids!(hub_video_panel.vid_preset_quality)).clicked(actions) {
+            self.apply_video_preset(cx, VideoQualityPreset::Quality);
+        }
+
+        if self.view.button(ids!(hub_video_panel.vid_generate_frame_btn)).clicked(actions) {
+            if self.video_state.is_running {
+                self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, "Wait for the current video generation to finish.");
+                return;
+            }
+            let prompt = self.video_state.prompt.trim().to_string();
+            if prompt.is_empty() {
+                self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, "Enter a prompt.");
+                return;
+            }
+            let size = match normalize_resolution(&self.video_state.size) {
+                Ok(size) => size,
+                Err(message) => {
+                    self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, &message);
+                    return;
+                }
+            };
+            let model = match self.select_video_first_frame_model() {
+                Ok(model) => model,
+                Err(message) => {
+                    self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, &message);
+                    return;
+                }
+            };
+            let negative_prompt = self.video_state.negative_prompt.trim().to_string();
+            self.call_video_first_frame(cx, model, prompt, negative_prompt, size);
+        }
+
+        if self.view.view(ids!(hub_video_panel.vid_image_drop_zone)).finger_down(actions).is_some() {
+            self.pick_video_image_file(cx);
+        }
+
+        if self.view.button(ids!(hub_video_panel.vid_image_clear_btn)).clicked(actions) {
+            self.clear_video_image_path(cx);
+        }
+
         if self.view.button(ids!(hub_video_panel.vid_generate_btn)).clicked(actions) {
             if let Some(sel) = self.selected_id.clone() {
                 let load = self.load_states.get(&sel).copied().unwrap_or_default();
@@ -1777,8 +2256,14 @@ impl ModelHubApp {
                     self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, "Model not loaded — click Load first.");
                     return;
                 }
-                let prompt = self.video_state.prompt.clone();
-                self.call_video(cx, sel, prompt);
+                let settings = match self.video_generation_settings() {
+                    Ok(settings) => settings,
+                    Err(message) => {
+                        self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, &message);
+                        return;
+                    }
+                };
+                self.call_video(cx, sel, settings);
             }
         }
 
@@ -2577,7 +3062,7 @@ impl ModelHubApp {
         self.image_state.rx = Some(rx);
         std::thread::spawn(move || {
             let client = reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(300)).build().unwrap();
+                .timeout(std::time::Duration::from_secs(900)).build().unwrap();
             let mut body = serde_json::json!({
                 "model": model_id, "prompt": prompt,
                 "n": 1, "size": "512x512", "response_format": "b64_json"
@@ -2586,8 +3071,18 @@ impl ModelHubApp {
             let result = client.post("http://localhost:8080/v1/images/generations")
                 .json(&body).send()
                 .map_err(|e| e.to_string())
-                .and_then(|r| r.json::<serde_json::Value>().map_err(|e| e.to_string()))
+                .and_then(|r| {
+                    let status = r.status();
+                    let text = r.text().map_err(|e| e.to_string())?;
+                    if !status.is_success() {
+                        return Err(format!("HTTP {}: {}", status, text));
+                    }
+                    serde_json::from_str::<serde_json::Value>(&text).map_err(|e| e.to_string())
+                })
                 .and_then(|v| {
+                    if let Some(err) = v.get("error") {
+                        return Err(format!("API error: {}", err));
+                    }
                     let b64 = v["data"][0]["b64_json"].as_str()
                         .ok_or_else(|| "No image data".to_string())?;
                     let bytes = base64::engine::general_purpose::STANDARD.decode(b64)
@@ -2694,18 +3189,19 @@ impl ModelHubApp {
         cx.new_next_frame();
     }
 
-    fn call_video(&mut self, cx: &mut Cx, model_id: String, prompt: String) {
+    fn call_video(&mut self, cx: &mut Cx, model_id: String, settings: VideoGenerationSettings) {
         if self.video_state.is_running { return; }
-        if prompt.is_empty() {
-            self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, "Enter a prompt.");
-            return;
-        }
         self.video_state.is_running = true;
-        self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, "Generating video — this may take a few minutes...");
+        let status = if settings.image_path.is_empty() {
+            "Generating video — this may take a few minutes..."
+        } else {
+            "Generating image-to-video — this may take a few minutes..."
+        };
+        self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, status);
         self.view.view(ids!(hub_video_panel.vid_result_row)).set_visible(cx, false);
         self.view.redraw(cx);
 
-        let slug: String = prompt.chars()
+        let slug: String = settings.prompt.chars()
             .take(40)
             .map(|c| if c.is_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
             .collect::<String>()
@@ -2719,12 +3215,27 @@ impl ModelHubApp {
         self.video_state.rx = Some(rx);
         std::thread::spawn(move || {
             let client = reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(600)).build().unwrap();
-            let body = serde_json::json!({
+                .timeout(std::time::Duration::from_secs(3600)).build().unwrap();
+            let mut body = serde_json::json!({
                 "model": model_id,
-                "prompt": prompt,
+                "prompt": settings.prompt,
+                "size": settings.size,
+                "num_frames": settings.num_frames,
+                "steps": settings.steps,
                 "response_format": "b64_json"
             });
+            if !settings.negative_prompt.is_empty() {
+                body["negative_prompt"] = serde_json::json!(settings.negative_prompt);
+            }
+            if !settings.image_path.is_empty() {
+                body["image"] = serde_json::json!(settings.image_path);
+            }
+            if let Some(guide_scale) = settings.guide_scale {
+                body["guide_scale"] = serde_json::json!(guide_scale);
+            }
+            if let Some(seed) = settings.seed {
+                body["seed"] = serde_json::json!(seed);
+            }
             let result = client.post("http://localhost:8080/v1/videos/generations")
                 .json(&body).send()
                 .map_err(|e| e.to_string())
@@ -2732,13 +3243,13 @@ impl ModelHubApp {
                     let status = r.status();
                     let text = r.text().map_err(|e| e.to_string())?;
                     if !status.is_success() {
-                        return Err(format!("HTTP {}: {}", status, text));
+                        return Err(http_error_message(status, &text));
                     }
                     serde_json::from_str::<serde_json::Value>(&text).map_err(|e| e.to_string())
                 })
                 .and_then(|v| {
-                    if let Some(err) = v.get("error") {
-                        return Err(format!("API error: {}", err));
+                    if let Some(message) = json_error_message(&v) {
+                        return Err(format!("API error: {}", message));
                     }
                     let b64 = v["data"][0]["b64_json"].as_str()
                         .ok_or_else(|| format!("No video data in response: {}", v))?;
@@ -3016,6 +3527,39 @@ impl ModelHubApp {
                     self.image_edit_state.rx = None;
                     redraw = true;
                 } else { cx.new_next_frame(); }
+            }
+        }
+
+        // Video first-frame image: generate, then feed it into the reference image slot
+        if self.video_state.is_generating_first_frame {
+            let first_frame_result = if let Some(rx) = &self.video_state.first_frame_rx {
+                match rx.try_recv() {
+                    Ok(result) => Some(result),
+                    Err(mpsc::TryRecvError::Empty) => {
+                        cx.new_next_frame();
+                        None
+                    }
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        Some(Err("First-frame generation stopped.".to_string()))
+                    }
+                }
+            } else {
+                None
+            };
+
+            if let Some(result) = first_frame_result {
+                match result {
+                    Ok(path) => {
+                        self.set_video_image_path(cx, path);
+                        self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, "First frame ready.");
+                    }
+                    Err(e) => {
+                        self.view.label(ids!(hub_video_panel.vid_status)).set_text(cx, &format!("First frame error: {}", e));
+                    }
+                }
+                self.video_state.is_generating_first_frame = false;
+                self.video_state.first_frame_rx = None;
+                redraw = true;
             }
         }
 
@@ -3376,6 +3920,38 @@ mod tests {
         assert!(is_supported_audio_path("/tmp/sample.m4a"));
         assert!(is_supported_audio_path("/tmp/sample.FLAC"));
         assert!(!is_supported_audio_path("/tmp/sample.txt"));
+    }
+
+    #[test]
+    fn detects_supported_image_paths_case_insensitively() {
+        assert!(is_supported_image_path("/tmp/frame.PNG"));
+        assert!(is_supported_image_path("/tmp/frame.webp"));
+        assert!(!is_supported_image_path("/tmp/frame.mp4"));
+    }
+
+    #[test]
+    fn normalizes_video_resolution() {
+        assert_eq!(normalize_resolution(" 640 x 384 ").as_deref(), Ok("640x384"));
+        assert!(normalize_resolution("wide").is_err());
+        assert!(normalize_resolution("0x384").is_err());
+    }
+
+    #[test]
+    fn extracts_json_api_error_message() {
+        let value = serde_json::json!({
+            "error": { "message": "Wan2.2 timed out", "type": "timeout" }
+        });
+        assert_eq!(json_error_message(&value).as_deref(), Some("Wan2.2 timed out"));
+    }
+
+    #[test]
+    fn strips_html_from_http_error_message() {
+        let message = http_error_message(
+            reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+            "<html><body><h1>500</h1><h3>Internal Server Error</h3></body></html>",
+        );
+        assert!(message.contains("500 Internal Server Error"));
+        assert!(!message.contains("<html>"));
     }
 
     #[test]
