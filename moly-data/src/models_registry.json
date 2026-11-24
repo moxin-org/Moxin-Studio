@@ -1202,7 +1202,7 @@
             },
             {
                   "id": "wan2.2-5b-4bit-mlx",
-                  "name": "Wan2.2 5B (4-bit MLX) — Coming Soon",
+                  "name": "Wan2.2 5B (4-bit MLX)",
                   "description": "Wan2.2 5B text-to-video diffusion model. Generate videos from text prompts on Apple Silicon. Coming soon.",
                   "category": "video_gen",
                   "subfolder": "Wan2.2",
